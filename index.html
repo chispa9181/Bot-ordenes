@@ -399,6 +399,7 @@
             <thead>
               <tr>
                 <th>Usuario</th>
+                <th>Contraseña</th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
@@ -551,6 +552,7 @@
             const tr = document.createElement('tr');
             tr.innerHTML = `
               <td>${u}</td>
+              <td><code>${data.users[u].pass}</code></td>
               <td><span style="color:${data.users[u].status === 'approved' ? 'var(--accent-green)' : 'var(--danger)'}">${data.users[u].status === 'approved' ? 'Aprobado' : 'Pendiente'}</span></td>
               <td>
                 ${data.users[u].status === 'pending' ? `<button onclick="approveUser('${u}')" class="btn btn-success">Aprobar</button>` : ''}
