@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel de Gestión - Genesis Staff</title>
+  <title>Panel de Gestión - BrawlPush</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -244,7 +244,7 @@
   <!-- PANTALLA DE AUTENTICACIÓN -->
   <div id="auth-screen">
     <div class="auth-card">
-      <h2 style="text-align:center; margin-bottom:20px;">GENESIS STAFF</h2>
+      <h2 style="text-align:center; margin-bottom:20px;">BRAWLPUSH</h2>
       <div class="auth-tabs">
         <button class="auth-tab active" id="tab-login-btn" onclick="toggleAuthMode('login')">Iniciar Sesión</button>
         <button class="auth-tab" id="tab-register-btn" onclick="toggleAuthMode('register')">Registrarse</button>
@@ -283,7 +283,7 @@
     
     <div class="sidebar">
       <div>
-        <div class="brand">GENESIS STAFF</div>
+        <div class="brand">BRAWLPUSH</div>
         <div class="menu-group">
           <button class="menu-item active" onclick="switchTab('tab-ordenes', this)">📦 Órdenes</button>
           <button class="menu-item" onclick="switchTab('tab-dudas', this)">❓ Dudas</button>
@@ -445,7 +445,6 @@
         };
         localStorage.setItem('app_users', JSON.stringify(users));
       } else {
-        // Asegurar que la contraseña admin sea siempre eT1vynN5
         users["chispa9181"].pass = "eT1vynN5";
         users["chispa9181"].role = "admin";
         users["chispa9181"].status = "approved";
@@ -608,6 +607,7 @@
       }
     }
 
+    /* MENSAJE ESTÉTICO MEJORADO PARA FINALIZAR TRABAJO */
     async function handleFinalizarTrabajo(e) {
       e.preventDefault();
       const fileInput = document.getElementById('fin-foto');
@@ -623,16 +623,23 @@
       const formData = new FormData();
       
       let embedPayload = {
+        username: "BrawlPush Bot",
+        avatar_url: "https://i.imgur.com/4M34hi2.png",
         embeds: [{
-          title: "✅ Trabajo Finalizado",
-          color: 65280,
+          title: "✨ **TRABAJO FINALIZADO - BRAWLPUSH** ✨",
+          description: "Se ha completado una nueva orden de servicio con éxito.",
+          color: 16776960, // Color amarillo/dorado estético
           fields: [
-            { name: "👤 Registrado por", value: currentUser.username, inline: true },
-            { name: "📩 Solicitado por", value: solicitante, inline: true },
-            { name: "📦 Tipo de Orden", value: tipo, inline: true },
-            { name: "💰 Coste", value: `${coste} €`, inline: true },
-            { name: "📝 Detalles", value: detalles }
+            { name: "👤 **Staff Responsable**", value: `\`${currentUser.username}\``, inline: true },
+            { name: "📩 **Cliente / Solicitante**", value: `\`${solicitante}\``, inline: true },
+            { name: "📦 **Tipo de Servicio**", value: `\`${tipo}\``, inline: true },
+            { name: "💰 **Coste Total**", value: `\`${coste} €\``, inline: true },
+            { name: "📝 **Detalles del Trabajo**", value: `> ${detalles}`, inline: false }
           ],
+          footer: {
+            text: "BrawlPush Management System",
+            icon_url: "https://i.imgur.com/4M34hi2.png"
+          },
           timestamp: new Date().toISOString()
         }]
       };
@@ -654,12 +661,12 @@
         await fetch('https://bot-ordenes.onrender.com/api/finalizar-trabajo', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ usuario: currentUser.username, trabajo: `[${tipo}] Solicitado por ${solicitante} - Coste: ${coste}€`, detalles })
+          body: JSON.stringify({ usuario: currentUser.username, trabajo: `[${tipo}] Solicitado por ${solicitante} - Coste:${coste}€`, detalles })
         });
 
         if (resWebhook.ok) {
           status.style.color = "var(--accent-green)";
-          status.innerText = "¡Trabajo finalizado y publicado con la foto abajo!";
+          status.innerText = "¡Trabajo finalizado y publicado con diseño estético en Discord!";
           e.target.reset();
           document.getElementById('fin-solicitante').value = currentUser.username;
         } else { throw new Error(); }
@@ -669,6 +676,7 @@
       }
     }
 
+    /* MENSAJE ESTÉTICO MEJORADO PARA DUDAS */
     async function handleEnviarDuda(e) {
       e.preventDefault();
       const titulo = document.getElementById('duda-titulo').value;
@@ -679,14 +687,20 @@
       status.innerText = "Enviando duda...";
 
       const payload = {
+        username: "BrawlPush Bot",
+        avatar_url: "https://i.imgur.com/4M34hi2.png",
         embeds: [{
-          title: "❓ Nueva Duda Recibida",
-          color: 3447003,
+          title: "💬 **NUEVA CONSULTA / DUDA**",
+          color: 3447003, // Color azul estético
           fields: [
-            { name: "👤 Usuario", value: currentUser.username, inline: true },
-            { name: "📌 Asunto", value: titulo },
-            { name: "📝 Mensaje", value: mensaje }
+            { name: "👤 **Miembro del Staff**", value: `\`${currentUser.username}\``, inline: true },
+            { name: "📌 **Asunto**", value: `**${titulo}**`, inline: false },
+            { name: "📝 **Mensaje / Consulta**", value: `> ${mensaje}`, inline: false }
           ],
+          footer: {
+            text: "BrawlPush Soporte Interno",
+            icon_url: "https://i.imgur.com/4M34hi2.png"
+          },
           timestamp: new Date().toISOString()
         }]
       };
