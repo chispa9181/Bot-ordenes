@@ -342,6 +342,693 @@
           </form>
         </div>
 
+        <!-- FORMULARIO FINALIZAR TRABAJO -->
+        <div id="form-finalizar-orden" class="form-container" style="display:none; margin-top: 20px;">
+          <h3>Finalizar Trabajo</h3>
+          <form onsubmit="handleFinalizarTrabajo(event)">
+            <div class="input-group">
+              <label>📷 Adjuntar Captura / Foto</label>
+              <input type="file" id="fin-foto" accept="image/*" required />
+            </div>
+            <div class="input-group">
+              <label>👤 Solicitante de la Orden</label>
+              <input type="text" id="fin-solicitante" required placeholder="Nombre de quien solicita la orden" />
+            </div>
+            <div class="input-group">
+              <label>📦 Tipo de Orden</label>
+              <input type="text" id="fin-tipo" required placeholder="Ej: Normal, Express, VIP..." />
+            </div>
+            <div class="input-group">
+              <label>💰 Coste / Cuánto ha costado (€)</label>
+              <input type="number" id="fin-coste" required placeholder="0" />
+            </div>
+            <div class="input-group">
+              <label>📝 Detalles de la Orden</label>
+              <textarea id="fin-detalles" rows="3" required placeholder="Describe los detalles de la orden finalizada..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Registrar Finalización</button>
+            <div id="msg-fin-orden" class="status-msg"></div>
+          </form>
+        </div>
+      </div>
+
+      <!-- DUDAS -->
+      <div id="tab-dudas" class="section">
+        <h2>Enviar una Duda o Consulta</h2>
+        <div class="form-container">
+          <form onsubmit="handleEnviarDuda(event)">
+            <div class="input-group">
+              <label>Asunto / Título</label>
+              <input type="text" id="duda-titulo" required placeholder="Escribe el tema..." />
+            </div>
+            <div class="input-group">
+              <label>Descripción detallada</label>
+              <textarea id="duda-mensaje" rows="5" required placeholder="Explica tu duda..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-blue">Enviar Duda al Canal</button>
+            <div id="msg-duda" class="status-msg"></div>
+          </form>
+        </div>
+      </div>
+
+      <!-- PANEL ADMIN -->
+      <div id="tab-admin" class="section">
+        <h2>Panel de Administrador</h2>
+
+        <div class="form-container" style="max-width: 100%; margin-bottom: 30px;">
+          <h3>👥 Solicitudes de Usuario y Aprobación</h3>
+          <table class="user-table">
+            <thead>
+              <tr>
+                <th>Usuario</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="user-list-body">
+            </tbody>
+          </table>
+        </div>
+
+        <div class="form-container" style="max-width: 100%; margin-bottom: 30px;">
+          <h3>⚙️ Webhook del Canal de Dudas</h3>
+          <input type="text" id="webhook-dudas-input" style="width:100%; padding:8px; background:var(--input-bg); border:1px solid var(--border-color); color:#fff; border-radius:6px; margin-top:8px;" />
+          <button onclick="saveWebhookDudas()" class="btn btn-primary" style="margin-top:10px; width:auto; padding:8px 16px;">Guardar Webhook Dudas</button>
+        </div>
+
+        <div class="form-container" style="max-width: 100%; margin-bottom: 30px;">
+          <h3>⚙️ Webhook de Finalizar Trabajo</h3>
+          <input type="text" id="webhook-finalizar-input" style="width:100%; padding:8px; background:var(--input-bg); border:1px solid var(--border-color); color:#fff; border-radius:6px; margin-top:8px;" />
+          <button onclick="saveWebhookFinalizar()" class="btn btn-primary" style="margin-top:10px; width:auto; padding:8px 16px;">Guardar Webhook Finalizar Trabajo</button>
+        </div>
+
+        <h3>📋 Registros de Actividad</h3>
+        <div id="registros-list" style="margin-top:15px; display:flex; flex-direction:column; gap:10px;"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const DEFAULT_WEBHOOK_ORDENES = "https://discord.com/api/webhooks/1545843817176109116/J6TU-V1-XiCdpFrRa-Usmx-FPokgH1EtUq1c2GQESG82pRbsoCqVJXCLXsHGh9gYNfp2";
+    const DEFAULT_WEBHOOK_FINALIZAR = "https://discord.com/api/webhooks/1550972957969612880/bOIXiV8NCb2GiOzKQwbpAIlNqnZCgIx4iGIn3-_9FRkn9ggJG4Wlh-JBT0rwx9ezF7Tl";
+
+    let webhookDudas = localStorage.getItem('discord_webhook_dudas') || DEFAULT_WEBHOOK_ORDENES;
+    let webhookFinalizar = localStorage.getItem('discord_webhook_finalizar') || DEFAULT_WEBHOOK_FINALIZAR;
+    let currentUser = null;
+
+    const initialUsers = {
+      "chispa9181": { pass: "eTlvynN5", status: "approved", role: "admin" }
+    };
+
+    function getUsers() {
+      return JSON.parse(localStorage.getItem('app_users')) || initialUsers;
+    }
+
+    function saveUsers(users) {
+      localStorage.setItem('app_users', JSON.stringify(users));
+    }
+
+    if (!localStorage.getItem('app_users')) {
+      saveUsers(initialUsers);
+    }
+
+    function toggleAuthMode(mode) {
+      document.getElementById('tab-login-btn').classList.toggle('active', mode === 'login');
+      document.getElementById('tab-register-btn').classList.toggle('active', mode === 'register');
+      document.getElementById('auth-login-form').style.display = mode === 'login' ? 'block' : 'none';
+      document.getElementById('auth-register-form').style.display = mode === 'register' ? 'block' : 'none';
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const u = document.getElementById('login-user').value.trim();
+      const p = document.getElementById('login-pass').value.trim();
+      const msg = document.getElementById('login-msg');
+
+      const users = getUsers();
+      if (users[u] && users[u].pass === p) {
+        if (users[u].status === 'pending') {
+          msg.style.color = "var(--danger)";
+          msg.innerText = "Tu cuenta está pendiente de aprobación por el admin.";
+          return;
+        }
+        currentUser = { username: u, role: users[u].role };
+        startApp();
+      } else {
+        msg.style.color = "var(--danger)";
+        msg.innerText = "Usuario o contraseña incorrectos.";
+      }
+    }
+
+    function handleRegister(e) {
+      e.preventDefault();
+      const u = document.getElementById('reg-user').value.trim();
+      const p = document.getElementById('reg-pass').value.trim();
+      const msg = document.getElementById('reg-msg');
+
+      const users = getUsers();
+      if (users[u]) {
+        msg.style.color = "var(--danger)";
+        msg.innerText = "El nombre de usuario ya existe.";
+        return;
+      }
+
+      users[u] = { pass: p, status: "pending", role: "user" };
+      saveUsers(users);
+      msg.style.color = "var(--accent-green)";
+      msg.innerText = "¡Solicitud enviada! Espera a que el admin te apruebe.";
+      e.target.reset();
+    }
+
+    function startApp() {
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('app-container').style.display = 'flex';
+      document.getElementById('user-display').innerText = currentUser.username;
+      document.getElementById('user-avatar').innerText = currentUser.username.charAt(0).toUpperCase();
+      document.getElementById('fin-solicitante').value = currentUser.username;
+
+      if (currentUser.role === 'admin') {
+        document.getElementById('admin-menu-btn').style.display = 'flex';
+        renderAdminUsers();
+        fetchRegistros();
+      } else {
+        document.getElementById('admin-menu-btn').style.display = 'none';
+      }
+      document.getElementById('webhook-dudas-input').value = webhookDudas;
+      document.getElementById('webhook-finalizar-input').value = webhookFinalizar;
+    }
+
+    function logout() {
+      currentUser = null;
+      document.getElementById('app-container').style.display = 'none';
+      document.getElementById('auth-screen').style.display = 'flex';
+    }
+
+    function switchTab(tabId, btn) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      btn.classList.add('active');
+    }
+
+    function showForm(formId) {
+      document.getElementById('form-crear-orden').style.display = 'none';
+      document.getElementById('form-finalizar-orden').style.display = 'none';
+      document.getElementById(formId).style.display = 'block';
+    }
+
+    function renderAdminUsers() {
+      const users = getUsers();
+      const tbody = document.getElementById('user-list-body');
+      tbody.innerHTML = '';
+
+      Object.keys(users).forEach(u => {
+        if (u === 'chispa9181') return;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${u}</td>
+          <td><span style="color:${users[u].status === 'approved' ? 'var(--accent-green)' : 'var(--danger)'}">${users[u].status === 'approved' ? 'Aprobado' : 'Pendiente'}</span></td>
+          <td>
+            ${users[u].status === 'pending' ? `<button onclick="approveUser('${u}')" class="btn btn-success">Aprobar</button>` : ''}
+            <button onclick="rejectUser('${u}')" class="btn btn-danger">${users[u].status === 'pending' ? 'Rechazar' : 'Eliminar'}</button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function approveUser(username) {
+      const users = getUsers();
+      if (users[username]) {
+        users[username].status = 'approved';
+        saveUsers(users);
+        renderAdminUsers();
+      }
+    }
+
+    function rejectUser(username) {
+      const users = getUsers();
+      if (users[username]) {
+        delete users[username];
+        saveUsers(users);
+        renderAdminUsers();
+      }
+    }
+
+    async function handleCrearOrden(e) {
+      e.preventDefault();
+      const ganancias = document.getElementById('ord-ganancias').value;
+      const tipo = document.getElementById('ord-tipo').value.trim();
+      const brawlers = document.getElementById('ord-brawlers').value.trim();
+      const detalles = document.getElementById('ord-detalles').value.trim();
+      const status = document.getElementById('msg-crear-orden');
+
+      status.style.color = "#fff";
+      status.innerText = "Enviando orden...";
+
+      try {
+        const res = await fetch('https://bot-ordenes.onrender.com/api/ticket', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ creadoPor: currentUser.username, ganancias, tipo, brawlers, detalles })
+        });
+        if (res.ok) {
+          status.style.color = "var(--accent-green)";
+          status.innerText = "¡Orden creada y enviada con éxito!";
+          e.target.reset();
+        } else { throw new Error(); }
+      } catch (err) {
+        status.style.color = "var(--danger)";
+        status.innerText = "Error al enviar la orden al servidor.";
+      }
+    }
+
+    /* FINALIZAR TRABAJO CON LA FOTO ABAJO DENTRO DEL EMBED */
+    async function handleFinalizarTrabajo(e) {
+      e.preventDefault();
+      const fileInput = document.getElementById('fin-foto');
+      const solicitante = document.getElementById('fin-solicitante').value.trim();
+      const tipo = document.getElementById('fin-tipo').value.trim();
+      const coste = document.getElementById('fin-coste').value.trim();
+      const detalles = document.getElementById('fin-detalles').value.trim();
+      const status = document.getElementById('msg-fin-orden');
+
+      status.style.color = "#fff";
+      status.innerText = "Enviando trabajo y foto a Discord...";
+
+      const formData = new FormData();
+      
+      let embedPayload = {
+        embeds: [{
+          title: "✅ Trabajo Finalizado",
+          color: 65280,
+          fields: [
+            { name: "👤 Registrado por", value: currentUser.username, inline: true },
+            { name: "📩 Solicitado por", value: solicitante, inline: true },
+            { name: "📦 Tipo de Orden", value: tipo, inline: true },
+            { name: "💰 Coste", value: `${coste} €`, inline: true },
+            { name: "📝 Detalles", value: detalles }
+          ],
+          timestamp: new Date().toISOString()
+        }]
+      };
+
+      if (fileInput.files[0]) {
+        const fileName = fileInput.files[0].name;
+        // Posiciona la imagen en la parte inferior de la tarjeta embed en Discord
+        embedPayload.embeds[0].image = { url: `attachment://${fileName}` };
+        formData.append('file', fileInput.files[0], fileName);
+      }
+
+      formData.append('payload_json', JSON.stringify(embedPayload));
+
+      try {
+        const resWebhook = await fetch(webhookFinalizar, {
+          method: 'POST',
+          body: formData
+        });
+
+        await fetch('https://bot-ordenes.onrender.com/api/finalizar-trabajo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usuario: currentUser.username, trabajo: `[${tipo}] Solicitado por ${solicitante} - Coste: ${coste}€`, detalles })
+        });
+
+        if (resWebhook.ok) {
+          status.style.color = "var(--accent-green)";
+          status.innerText = "¡Trabajo finalizado y publicado con la foto abajo!";
+          e.target.reset();
+          document.getElementById('fin-solicitante').value = currentUser.username;
+        } else { throw new Error(); }
+      } catch (err) {
+        status.style.color = "var(--danger)";
+        status.innerText = "Error al enviar el trabajo a Discord.";
+      }
+    }
+
+    async function handleEnviarDuda(e) {
+      e.preventDefault();
+      const titulo = document.getElementById('duda-titulo').value;
+      const mensaje = document.getElementById('duda-mensaje').value;
+      const status = document.getElementById('msg-duda');
+
+      status.style.color = "#fff";
+      status.innerText = "Enviando duda...";
+
+      const payload = {
+        embeds: [{
+          title: "❓ Nueva Duda Recibida",
+          color: 3447003,
+          fields: [
+            { name: "👤 Usuario", value: currentUser.username, inline: true },
+            { name: "📌 Asunto", value: titulo },
+            { name: "📝 Mensaje", value: mensaje }
+          ],
+          timestamp: new Date().toISOString()
+        }]
+      };
+
+      try {
+        const res = await fetch(webhookDudas, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok) {
+          status.style.color = "var(--accent-green)";
+          status.innerText = "¡Duda enviada con éxito!";
+          e.target.reset();
+        } else { throw new Error(); }
+      } catch (err) {
+        status.style.color = "var(--danger)";
+        status.innerText = "Error al enviar la duda a Discord.";
+      }
+    }
+
+    function saveWebhookDudas() {
+      const val = document.getElementById('webhook-dudas-input').value.trim();
+      localStorage.setItem('discord_webhook_dudas', val);
+      webhookDudas = val;
+      alert("Webhook de dudas guardada correctamente.");
+    }
+
+    function saveWebhookFinalizar() {
+      const val = document.getElementById('webhook-finalizar-input').value.trim();
+      localStorage.setItem('discord_webhook_finalizar', val);
+      webhookFinalizar = val;
+      alert("Webhook de finalizar trabajo guardada correctamente.");
+    }
+
+    async function fetchRegistros() {
+      try {
+        const res = await fetch('https://bot-ordenes.onrender.com/api/registros', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: "1234" })
+        });
+        const data = await res.json();
+        if (data.success) {
+          const list = document.getElementById('registros-list');
+          list.innerHTML = data.registros.map(r => `
+            <div style="background:var(--card-bg); padding:12px; border-radius:8px; border:1px solid var(--border-color);">
+              <strong>${r.tipoAccion}</strong> - ${r.usuario} (${r.fecha})<br>
+              <small style="color:var(--text-muted);">${r.detalles}</small>
+            </div>
+          `).join('');
+        }
+      } catch (err) {}
+    }
+  </script>
+</body>
+</html>
+
+    .auth-tab {
+      flex: 1;
+      padding: 10px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+
+    .auth-tab.active {
+      color: #fff;
+      border-color: var(--accent-blue);
+    }
+
+    #app-container {
+      display: none;
+      width: 100%;
+      height: 100%;
+    }
+
+    .sidebar {
+      width: 260px;
+      background-color: var(--sidebar-bg);
+      border-right: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 20px 15px;
+    }
+
+    .brand {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 30px;
+      padding-left: 10px;
+    }
+
+    .menu-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .menu-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 8px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      background: transparent;
+      border: none;
+      width: 100%;
+      text-align: left;
+    }
+
+    .menu-item:hover, .menu-item.active {
+      background-color: var(--card-bg);
+      color: #fff;
+    }
+
+    .user-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background-color: var(--accent-blue);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    .user-info { display: flex; flex-direction: column; }
+    .user-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
+    .user-name { font-size: 0.9rem; font-weight: 600; }
+
+    .btn-logout {
+      background: transparent;
+      border: none;
+      color: var(--danger);
+      font-size: 0.75rem;
+      cursor: pointer;
+      margin-top: 2px;
+      text-align: left;
+    }
+
+    .main-content {
+      flex: 1;
+      padding: 40px;
+      overflow-y: auto;
+    }
+
+    .section { display: none; }
+    .section.active { display: block; }
+
+    h2 { margin-bottom: 20px; font-weight: 700; }
+
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+    }
+
+    .action-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+      cursor: pointer;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .action-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--accent-blue);
+    }
+
+    .form-container {
+      max-width: 550px;
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 24px;
+    }
+
+    .input-group { margin-bottom: 16px; }
+    .input-group label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; }
+    .input-group input, .input-group select, .input-group textarea {
+      width: 100%;
+      padding: 10px 14px;
+      background-color: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: #fff;
+      outline: none;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-primary { background-color: var(--accent-green); color: #fff; }
+    .btn-blue { background-color: var(--accent-blue); color: #fff; }
+    .btn-danger { background-color: var(--danger); color: #fff; padding: 6px 12px; font-size: 0.8rem; margin-left: 4px; }
+    .btn-success { background-color: var(--accent-green); color: #fff; padding: 6px 12px; font-size: 0.8rem; }
+
+    .status-msg { margin-top: 10px; font-size: 0.85rem; text-align: center; }
+
+    .user-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+
+    .user-table th, .user-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid var(--border-color);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- PANTALLA DE AUTENTICACIÓN -->
+  <div id="auth-screen">
+    <div class="auth-card">
+      <h2 style="text-align:center; margin-bottom:20px;">GENESIS STAFF</h2>
+      <div class="auth-tabs">
+        <button class="auth-tab active" id="tab-login-btn" onclick="toggleAuthMode('login')">Iniciar Sesión</button>
+        <button class="auth-tab" id="tab-register-btn" onclick="toggleAuthMode('register')">Registrarse</button>
+      </div>
+
+      <form id="auth-login-form" onsubmit="handleLogin(event)">
+        <div class="input-group">
+          <label>Usuario</label>
+          <input type="text" id="login-user" required placeholder="Tu usuario" />
+        </div>
+        <div class="input-group">
+          <label>Contraseña</label>
+          <input type="password" id="login-pass" required placeholder="Tu contraseña" />
+        </div>
+        <button type="submit" class="btn btn-blue">Entrar</button>
+        <div id="login-msg" class="status-msg"></div>
+      </form>
+
+      <form id="auth-register-form" onsubmit="handleRegister(event)" style="display:none;">
+        <div class="input-group">
+          <label>Usuario deseado</label>
+          <input type="text" id="reg-user" required placeholder="Nombre de usuario" />
+        </div>
+        <div class="input-group">
+          <label>Contraseña</label>
+          <input type="password" id="reg-pass" required placeholder="Crea una contraseña" />
+        </div>
+        <button type="submit" class="btn btn-primary">Solicitar Registro</button>
+        <div id="reg-msg" class="status-msg"></div>
+      </form>
+    </div>
+  </div>
+
+  <!-- INTERFAZ PRINCIPAL -->
+  <div id="app-container">
+    
+    <div class="sidebar">
+      <div>
+        <div class="brand">GENESIS STAFF</div>
+        <div class="menu-group">
+          <button class="menu-item active" onclick="switchTab('tab-ordenes', this)">📦 Órdenes</button>
+          <button class="menu-item" onclick="switchTab('tab-dudas', this)">❓ Dudas</button>
+          <button class="menu-item" id="admin-menu-btn" style="display:none;" onclick="switchTab('tab-admin', this)">🔒 Panel Admin</button>
+        </div>
+      </div>
+
+      <div class="user-card">
+        <div class="avatar" id="user-avatar">U</div>
+        <div class="user-info">
+          <span class="user-label">Usuario actual</span>
+          <span class="user-name" id="user-display">Usuario</span>
+          <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="main-content">
+
+      <!-- ÓRDENES -->
+      <div id="tab-ordenes" class="section active">
+        <h2>Gestión de Órdenes</h2>
+        <div class="card-grid" style="margin-bottom: 30px;">
+          <div class="action-card" onclick="showForm('form-crear-orden')">
+            <h3>🛠️ Crear Orden</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 6px;">Enviar solicitud de nuevo trabajo al Bot.</p>
+          </div>
+          <div class="action-card" onclick="showForm('form-finalizar-orden')">
+            <h3>✅ Finalizar Trabajo</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 6px;">Registrar cierre de trabajo completado.</p>
+          </div>
+        </div>
+
+        <!-- FORMULARIO CREAR ÓRDEN -->
+        <div id="form-crear-orden" class="form-container" style="display:none;">
+          <h3>Crear Orden</h3>
+          <form onsubmit="handleCrearOrden(event)">
+            <div class="input-group">
+              <label>Ganancias (€)</label>
+              <input type="number" id="ord-ganancias" required placeholder="0" />
+            </div>
+            <div class="input-group">
+              <label>Tipo de Orden</label>
+              <input type="text" id="ord-tipo" placeholder="Normal, Express, VIP..." />
+            </div>
+            <div class="input-group">
+              <label>Brawlers a Fuerza 11</label>
+              <input type="text" id="ord-brawlers" placeholder="Ninguno / Nombre de Brawlers" />
+            </div>
+            <div class="input-group">
+              <label>Detalles de la orden</label>
+              <textarea id="ord-detalles" rows="3" placeholder="Información sobre la orden..."></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Enviar Orden</button>
+            <div id="msg-crear-orden" class="status-msg"></div>
+          </form>
+        </div>
+
         <!-- FORMULARIO FINALIZAR TRABAJO ACTUALIZADO -->
         <div id="form-finalizar-orden" class="form-container" style="display:none; margin-top: 20px;">
           <h3>Finalizar Trabajo</h3>
