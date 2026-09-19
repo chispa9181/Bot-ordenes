@@ -226,7 +226,7 @@
 
     .btn-primary { background-color: var(--accent-green); color: #fff; }
     .btn-blue { background-color: var(--accent-blue); color: #fff; }
-    .btn-danger { background-color: var(--danger); color: #fff; padding: 6px 12px; font-size: 0.8rem; }
+    .btn-danger { background-color: var(--danger); color: #fff; padding: 6px 12px; font-size: 0.8rem; margin-left: 4px; }
     .btn-success { background-color: var(--accent-green); color: #fff; padding: 6px 12px; font-size: 0.8rem; }
 
     .status-msg { margin-top: 10px; font-size: 0.85rem; text-align: center; }
@@ -322,42 +322,50 @@
           </div>
         </div>
 
-        <!-- FORMULARIO CREAR ÓRDEN ACTUALIZADO -->
+        <!-- FORMULARIO CREAR ÓRDEN STANDARD -->
         <div id="form-crear-orden" class="form-container" style="display:none;">
           <h3>Crear Orden</h3>
           <form onsubmit="handleCrearOrden(event)">
             <div class="input-group">
-              <label>📷 Adjuntar Captura / Foto</label>
-              <input type="file" id="ord-foto" accept="image/*" />
+              <label>Ganancias (€)</label>
+              <input type="number" id="ord-ganancias" required placeholder="0" />
             </div>
             <div class="input-group">
-              <label>👤 Solicitante de la Orden</label>
-              <input type="text" id="ord-solicitante" required placeholder="Nombre de quien solicita la orden" />
+              <label>Tipo de Orden</label>
+              <input type="text" id="ord-tipo" placeholder="Normal, Express, VIP..." />
             </div>
             <div class="input-group">
-              <label>📦 Tipo de Orden</label>
-              <input type="text" id="ord-tipo" required placeholder="Ej: Normal, Express, VIP..." />
+              <label>Brawlers a Fuerza 11</label>
+              <input type="text" id="ord-brawlers" placeholder="Ninguno / Nombre de Brawlers" />
             </div>
             <div class="input-group">
-              <label>📝 Detalles de la Orden</label>
-              <textarea id="ord-detalles" rows="4" required placeholder="Describe los detalles de la orden..."></textarea>
+              <label>Detalles de la orden</label>
+              <textarea id="ord-detalles" rows="3" placeholder="Información sobre la orden..."></textarea>
             </div>
             <button type="submit" class="btn btn-primary">Enviar Orden</button>
             <div id="msg-crear-orden" class="status-msg"></div>
           </form>
         </div>
 
-        <!-- FORMULARIO FINALIZAR TRABAJO -->
+        <!-- FORMULARIO FINALIZAR TRABAJO CON FOTO Y DETALLES DEL SOLICITANTE -->
         <div id="form-finalizar-orden" class="form-container" style="display:none; margin-top: 20px;">
           <h3>Finalizar Trabajo</h3>
           <form onsubmit="handleFinalizarTrabajo(event)">
             <div class="input-group">
-              <label>Trabajo Realizado</label>
-              <input type="text" id="fin-trabajo" required />
+              <label>📷 Adjuntar Captura / Foto</label>
+              <input type="file" id="fin-foto" accept="image/*" />
             </div>
             <div class="input-group">
-              <label>Detalles Adicionales</label>
-              <textarea id="fin-detalles" rows="3"></textarea>
+              <label>👤 Solicitante de la Orden</label>
+              <input type="text" id="fin-solicitante" required placeholder="Nombre de quien solicita la orden" />
+            </div>
+            <div class="input-group">
+              <label>📦 Tipo de Orden</label>
+              <input type="text" id="fin-tipo" required placeholder="Ej: Normal, Express, VIP..." />
+            </div>
+            <div class="input-group">
+              <label>📝 Detalles de la Orden</label>
+              <textarea id="fin-detalles" rows="4" required placeholder="Describe los detalles de la orden finalizada..."></textarea>
             </div>
             <button type="submit" class="btn btn-primary">Registrar Finalización</button>
             <div id="msg-fin-orden" class="status-msg"></div>
@@ -395,7 +403,7 @@
               <tr>
                 <th>Usuario</th>
                 <th>Estado</th>
-                <th>Acción</th>
+                <th>Acciones</th>
               </tr>
             </thead>
             <tbody id="user-list-body">
@@ -490,7 +498,7 @@
       document.getElementById('app-container').style.display = 'flex';
       document.getElementById('user-display').innerText = currentUser.username;
       document.getElementById('user-avatar').innerText = currentUser.username.charAt(0).toUpperCase();
-      document.getElementById('ord-solicitante').value = currentUser.username;
+      document.getElementById('fin-solicitante').value = currentUser.username;
 
       if (currentUser.role === 'admin') {
         document.getElementById('admin-menu-btn').style.display = 'flex';
@@ -521,7 +529,7 @@
       document.getElementById(formId).style.display = 'block';
     }
 
-    /* GESTIÓN DE USUARIOS */
+    /* GESTIÓN DE USUARIOS CON BOTÓN APROBAR Y RECHAZAR */
     function renderAdminUsers() {
       const users = getUsers();
       const tbody = document.getElementById('user-list-body');
@@ -534,7 +542,8 @@
           <td>${u}</td>
           <td><span style="color:${users[u].status === 'approved' ? 'var(--accent-green)' : 'var(--danger)'}">${users[u].status === 'approved' ? 'Aprobado' : 'Pendiente'}</span></td>
           <td>
-            ${users[u].status === 'pending' ? `<button onclick="approveUser('${u}')" class="btn btn-success">Aprobar</button>` : `<button onclick="deleteUser('${u}')" class="btn btn-danger">Eliminar</button>`}
+            ${users[u].status === 'pending' ? `<button onclick="approveUser('${u}')" class="btn btn-success">Aprobar</button>` : ''}
+            <button onclick="rejectUser('${u}')" class="btn btn-danger">${users[u].status === 'pending' ? 'Rechazar' : 'Eliminar'}</button>
           </td>
         `;
         tbody.appendChild(tr);
@@ -550,7 +559,7 @@
       }
     }
 
-    function deleteUser(username) {
+    function rejectUser(username) {
       const users = getUsers();
       if (users[username]) {
         delete users[username];
@@ -562,8 +571,9 @@
     /* ENVIAR CREAR ÓRDEN */
     async function handleCrearOrden(e) {
       e.preventDefault();
-      const solicitante = document.getElementById('ord-solicitante').value.trim();
+      const ganancias = document.getElementById('ord-ganancias').value;
       const tipo = document.getElementById('ord-tipo').value.trim();
+      const brawlers = document.getElementById('ord-brawlers').value.trim();
       const detalles = document.getElementById('ord-detalles').value.trim();
       const status = document.getElementById('msg-crear-orden');
 
@@ -574,17 +584,45 @@
         const res = await fetch('https://bot-ordenes.onrender.com/api/ticket', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ creadoPor: solicitante, ganancias: "0", tipo, brawlers: "N/A", detalles })
+          body: JSON.stringify({ creadoPor: currentUser.username, ganancias, tipo, brawlers, detalles })
         });
         if (res.ok) {
           status.style.color = "var(--accent-green)";
           status.innerText = "¡Orden creada y enviada con éxito!";
           e.target.reset();
-          document.getElementById('ord-solicitante').value = currentUser.username;
         } else { throw new Error(); }
       } catch (err) {
         status.style.color = "var(--danger)";
         status.innerText = "Error al enviar la orden al servidor.";
+      }
+    }
+
+    /* FINALIZAR TRABAJO CON SOLICITANTE Y CAPTURA */
+    async function handleFinalizarTrabajo(e) {
+      e.preventDefault();
+      const solicitante = document.getElementById('fin-solicitante').value.trim();
+      const tipo = document.getElementById('fin-tipo').value.trim();
+      const detalles = document.getElementById('fin-detalles').value.trim();
+      const status = document.getElementById('msg-fin-orden');
+
+      status.style.color = "#fff";
+      status.innerText = "Registrando finalización...";
+
+      try {
+        const res = await fetch('https://bot-ordenes.onrender.com/api/finalizar-trabajo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ usuario: currentUser.username, trabajo: `[${tipo}] Solicitado por ${solicitante}`, detalles })
+        });
+        if (res.ok) {
+          status.style.color = "var(--accent-green)";
+          status.innerText = "¡Trabajo finalizado y registrado correctamente!";
+          e.target.reset();
+          document.getElementById('fin-solicitante').value = currentUser.username;
+        } else { throw new Error(); }
+      } catch (err) {
+        status.style.color = "var(--danger)";
+        status.innerText = "Error al registrar la finalización del trabajo.";
       }
     }
 
@@ -625,30 +663,6 @@
       } catch (err) {
         status.style.color = "var(--danger)";
         status.innerText = "Error al enviar la duda a Discord.";
-      }
-    }
-
-    /* FINALIZAR TRABAJO */
-    async function handleFinalizarTrabajo(e) {
-      e.preventDefault();
-      const trabajo = document.getElementById('fin-trabajo').value;
-      const detalles = document.getElementById('fin-detalles').value;
-      const status = document.getElementById('msg-fin-orden');
-
-      try {
-        const res = await fetch('https://bot-ordenes.onrender.com/api/finalizar-trabajo', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ usuario: currentUser.username, trabajo, detalles })
-        });
-        if (res.ok) {
-          status.style.color = "var(--accent-green)";
-          status.innerText = "¡Trabajo registrado correctamente!";
-          e.target.reset();
-        } else { throw new Error(); }
-      } catch (err) {
-        status.style.color = "var(--danger)";
-        status.innerText = "Error al registrar el trabajo.";
       }
     }
 
