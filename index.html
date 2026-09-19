@@ -691,10 +691,15 @@
       status.innerText = "Enviando duda...";
 
       try {
-        const res = await fetch('https://bot-ordenes.onrender.com/api/duda', {
+        const res = <span style="background-color: var(--card-bg); padding: 2px 4px; border-radius: 4px;">await fetch('https://bot-ordenes.onrender.com/api/duda', {</span>
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ usuario: currentUser.username, titulo, mensaje })
+          body: JSON.stringify({ 
+            usuario: currentUser.username, 
+            titulo, 
+            mensaje, 
+            webhookUrl: webhookDudas 
+          })
         });
         
         const data = await res.json();
@@ -707,7 +712,7 @@
         }
       } catch (err) {
         status.style.color = "var(--danger)";
-        status.innerText = "Error al enviar la duda al servidor.";
+        status.innerText = "Error al enviar la duda al servidor: " + err.message;
       }
     }
 
