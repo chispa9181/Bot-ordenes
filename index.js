@@ -5,7 +5,6 @@ const cors = require('cors');
 // ==========================================
 // CONFIGURACIÓN DE TU BOT Y SERVIDOR DISCORD
 // ==========================================
-require('dotenv').config();
 
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const GUILD_ID = "1545761394140651605";
