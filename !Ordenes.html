@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel de Registro de Trabajos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #090d16;
+      --card-bg: rgba(21, 29, 46, 0.75);
+      --input-bg: rgba(10, 15, 26, 0.8);
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-focus: #38bdf8;
+      --primary: #0284c7;
+      --accent: #38bdf8;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --danger: #ef4444;
+      --success: #22c55e;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    
+    body {
+      background-color: var(--bg-main);
+      background-image: 
+        radial-gradient(at 10% 10%, rgba(56, 189, 248, 0.12) 0px, transparent 50%),
+        radial-gradient(at 90% 90%, rgba(2, 132, 199, 0.12) 0px, transparent 50%);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 36px 32px;
+      width: 100%;
+      max-width: 500px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      position: relative;
+      transition: max-width 0.3s ease;
+    }
+
+    .card.large-card { max-width: 650px; }
+
+    .header-tag {
+      display: inline-flex; align-items: center; background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.2); color: var(--accent); padding: 4px 12px;
+      border-radius: 20px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; margin-bottom: 12px;
+    }
+
+    h2 { font-size: 1.65rem; font-weight: 800; margin-bottom: 24px; color: var(--text-main); }
+    .input-group { margin-bottom: 18px; }
+    label { display: block; font-size: 0.825rem; font-weight: 600; margin-bottom: 8px; color: var(--text-muted); }
+
+    input[type="text"], input[type="password"], input[type="number"], textarea {
+      width: 100%; padding: 12px 16px; border-radius: 10px; border: 1px solid var(--border-color);
+      background-color: var(--input-bg); color: #fff; font-size: 0.95rem; transition: all 0.2s ease;
+    }
+
+    input:focus, textarea:focus { outline: none; border-color: var(--border-focus); box-shadow: 0 0 12px rgba(56, 189, 248, 0.2); }
+
+    input[type="file"] {
+      width: 100%; padding: 10px; background: var(--input-bg); border: 1px dashed var(--border-color);
+      border-radius: 10px; color: var(--text-muted); font-size: 0.85rem; cursor: pointer;
+    }
+
+    button {
+      width: 100%; padding: 13px; background: linear-gradient(135deg, var(--primary) 0%, #0284c7 100%);
+      color: white; border: none; border-radius: 10px; font-weight: 700; cursor: pointer; transition: 0.25s;
+    }
+    button:hover { background: linear-gradient(135deg, #0369a1 0%, #075985 100%); }
+
+    .btn-secondary {
+      background: transparent !important; border: 1px solid var(--border-color) !important;
+      color: var(--text-muted) !important; margin-top: 12px;
+    }
+    .btn-secondary:hover { color: var(--text-main) !important; border-color: rgba(255, 255, 255, 0.2) !important; }
+
+    .hidden { display: none !important; }
+
+    .menu-btn {
+      background: rgba(255, 255, 255, 0.03); border: 1px solid var(--border-color); margin-bottom: 14px;
+      padding: 16px 20px; display: flex; justify-content: space-between; align-items: center;
+      width: 100%; color: var(--text-main); border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s;
+    }
+    .menu-btn:hover { background: rgba(56, 189, 248, 0.08); border-color: rgba(56, 189, 248, 0.3); transform: translateX(4px); }
+
+    .error { color: var(--danger); font-size: 0.85rem; margin-top: 12px; text-align: center; }
+    .success { color: var(--success); font-size: 0.85rem; margin-top: 12px; text-align: center; }
+
+    .user-list-large {
+      margin-top: 15px; max-height: 280px; overflow-y: auto; border: 1px solid var(--border-color);
+      border-radius: 12px; padding: 12px; background: rgba(0, 0, 0, 0.25);
+    }
+    .user-item-large {
+      display: flex; justify-content: space-between; align-items: center; padding: 12px 14px;
+      border-bottom: 1px solid var(--border-color); font-size: 0.95rem; gap: 10px;
+    }
+    .user-item-large:last-child { border-bottom: none; }
+    .user-info { display: flex; align-items: center; gap: 12px; flex-grow: 1; }
+    .pass-text { font-family: monospace; color: var(--accent); background: rgba(56, 189, 248, 0.1); padding: 3px 8px; border-radius: 6px; font-size: 0.85rem; }
+    
+    .action-btn-group { display: flex; gap: 8px; align-items: center; }
+    .icon-btn { background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); color: var(--text-muted); padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; font-weight: 600; width: auto; }
+    .icon-btn:hover { color: var(--text-main); background: rgba(255, 255, 255, 0.15); }
+    .delete-btn { background: rgba(239, 68, 68, 0.15); border: 1px solid var(--danger); color: var(--danger); padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 0.8rem; width: auto; }
+    .delete-btn:hover { background: var(--danger); color: white; }
+
+    .admin-footer-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+    .btn-create-nav { background: linear-gradient(135deg, #16a34a 0%, #15803d 100%); width: auto; padding: 10px 20px; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+
+  <div class="card" id="main-card">
+    
+    <!-- PANTALLA 1: LOGIN PRINCIPAL -->
+    <div id="login-screen">
+      <div class="header-tag">Acceso</div>
+      <h2>Iniciar Sesión</h2>
+      <form id="login-form">
+        <div class="input-group">
+          <label>Usuario</label>
+          <input type="text" id="username" placeholder="Ingresa tu usuario" required>
+        </div>
+        <div class="input-group">
+          <label>Contraseña</label>
+          <input type="password" id="password" placeholder="••••••••" required>
+        </div>
+        <button type="submit">Entrar al Panel</button>
+        <p id="login-error" class="error hidden">Usuario o contraseña incorrectos.</p>
+      </form>
+    </div>
+
+    <!-- PANTALLA 2: MENÚ PRINCIPAL -->
+    <div id="menu-screen" class="hidden">
+      <div class="header-tag">Menú Principal</div>
+      <h2>Selecciona Opciones</h2>
+      
+      <button class="menu-btn" onclick="openSection('form-screen')">
+        <span>📋 Finalización de Trabajo</span><span>➔</span>
+      </button>
+
+      <!-- BOTÓN REVISADO: CREAR ÓRDENES -->
+      <button class="menu-btn" onclick="openSection('ticket-form-screen')">
+        <span>🛠️ Crear Órdenes</span><span>➔</span>
+      </button>
+
+      <button class="menu-btn" onclick="openSection('support-screen')">
+        <span>💬 Soporte Técnico</span><span>➔</span>
+      </button>
+
+      <button class="menu-btn" onclick="openSection('admin-login-screen')" style="border-color: rgba(56, 189, 248, 0.3);">
+        <span style="color: var(--accent);">🔑 Modo Admin</span><span>➔</span>
+      </button>
+      
+      <button class="menu-btn" onclick="logout()" style="border-color: rgba(239, 68, 68, 0.3); margin-top: 24px;">
+        <span style="color: var(--danger);">🚪 Cerrar Sesión</span>
+      </button>
+    </div>
+
+    <!-- PANTALLA 3: FORMULARIO CREAR ÓRDENES -->
+    <div id="ticket-form-screen" class="hidden">
+      <div class="header-tag">Gestión de Órdenes</div>
+      <h2>Crear Órdenes</h2>
+
+      <form id="ticket-form">
+        <div class="input-group">
+          <label>Ganancias (€)</label>
+          <input type="number" step="0.01" id="order-ganancias" placeholder="Ej: 15.50" required>
+        </div>
+
+        <div class="input-group">
+          <label>Tipo de orden</label>
+          <input type="text" id="order-tipo" placeholder="Escribe el tipo de orden..." required>
+        </div>
+
+        <div class="input-group">
+          <label>Brawlers a fuerza 11</label>
+          <input type="text" id="order-brawlers" placeholder="Ej: Shelly, Colt, Mortis..." required>
+        </div>
+
+        <div class="input-group">
+          <label>Detalles de la orden</label>
+          <textarea id="order-detalles" rows="4" placeholder="Describe los detalles de la orden..." required></textarea>
+        </div>
+
+        <button type="submit" id="ticket-submit-btn" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);">Enviar Orden</button>
+        <button type="button" class="btn-secondary" onclick="openSection('menu-screen')">Volver al menú</button>
+        <p id="ticket-status-message"></p>
+      </form>
+    </div>
+
+    <!-- PANTALLA 4: LOGIN MODO ADMIN -->
+    <div id="admin-login-screen" class="hidden">
+      <div class="header-tag">Seguridad</div>
+      <h2>Acceso Administrador</h2>
+      <form id="admin-login-form">
+        <div class="input-group">
+          <label>Usuario Admin</label>
+          <input type="text" id="admin-user-input" placeholder="chispa9181" required>
+        </div>
+        <div class="input-group">
+          <label>Contraseña Admin</label>
+          <input type="password" id="admin-pass-input" placeholder="••••••••" required>
+        </div>
+        <button type="submit">Entrar como Admin</button>
+        <button type="button" class="btn-secondary" onclick="openSection('menu-screen')">Volver al Menú</button>
+        <p id="admin-login-error" class="error hidden">Usuario o contraseña de admin incorrectos.</p>
+      </form>
+    </div>
+
+    <!-- PANTALLA 5: PANEL ADMIN -->
+    <div id="admin-dashboard-screen" class="hidden">
+      <div class="header-tag">Panel Control</div>
+      <h2>Modo Administrador</h2>
+      
+      <button class="menu-btn" onclick="openSection('admin-users-screen')">
+        <span>⚙️ Gestión de Usuarios</span><span>➔</span>
+      </button>
+
+      <button class="menu-btn" onclick="openSection('admin-webhook-screen')">
+        <span>🌐 Configuración de Webhook</span><span>➔</span>
+      </button>
+
+      <button type="button" class="btn-secondary" onclick="openSection('menu-screen')">Volver al Menú Principal</button>
+    </div>
+
+    <!-- PANTALLA 6: CONFIGURACIÓN WEBHOOK -->
+    <div id="admin-webhook-screen" class="hidden">
+      <div class="header-tag">Discord</div>
+      <h2>Configurar Webhook</h2>
+      <div class="input-group">
+        <label>URL de la Webhook de Discord</label>
+        <input type="text" id="webhook-url-input" placeholder="https://discord.com/api/webhooks/..." />
+      </div>
+      <button type="button" onclick="saveWebhookUrl()" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);">Guardar Webhook</button>
+      <button type="button" class="btn-secondary" onclick="openSection('admin-dashboard-screen')">Volver al Panel Admin</button>
+    </div>
+
+    <!-- PANTALLA 7: LISTA DE USUARIOS -->
+    <div id="admin-users-screen" class="hidden">
+      <div class="header-tag">Administración</div>
+      <h2>Lista de Usuarios Registrados</h2>
+
+      <div class="user-list-large">
+        <div id="users-container"></div>
+      </div>
+
+      <div class="admin-footer-actions">
+        <button type="button" class="btn-secondary" onclick="openSection('admin-dashboard-screen')" style="width: auto; margin-top: 0;">Volver al Panel Admin</button>
+        <button type="button" class="btn-create-nav" onclick="openSection('create-user-screen')">➕ Crear Usuario</button>
+      </div>
+    </div>
+
+    <!-- PANTALLA 8: CREAR USUARIO -->
+    <div id="create-user-screen" class="hidden">
+      <div class="header-tag">Nuevo Acceso</div>
+      <h2>Crear Usuario</h2>
+      <form id="create-user-form">
+        <div class="input-group">
+          <label>Nombre de Usuario</label>
+          <input type="text" id="new-username" placeholder="Ej: carlos12" required>
+        </div>
+        <div class="input-group">
+          <label>Contraseña de Acceso</label>
+          <input type="text" id="new-password" placeholder="••••••••" required>
+        </div>
+        <button type="submit" style="background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);">Guardar Usuario</button>
+        <button type="button" class="btn-secondary" onclick="openSection('admin-users-screen')">Cancelar</button>
+      </form>
+    </div>
+
+    <!-- PANTALLA 9: FORMULARIO FINALIZACIÓN DE TRABAJO -->
+    <div id="form-screen" class="hidden">
+      <div class="header-tag">Formulario</div>
+      <h2>Finalización de Trabajo</h2>
+
+      <form id="job-form">
+        <div class="input-group">
+          <label>¿Quién envía este reporte?</label>
+          <input type="text" id="enviadoPor" placeholder="Tu nombre / Nickname" required>
+        </div>
+
+        <div class="input-group">
+          <label>¿Quién lo ha comprado?</label>
+          <input type="text" id="comprador" placeholder="Nombre / ID del cliente" required>
+        </div>
+
+        <div class="input-group">
+          <label>¿Cuánto ha costado la orden?</label>
+          <input type="number" step="0.01" id="costo" placeholder="0.00" required>
+        </div>
+
+        <div class="input-group">
+          <label>Tipo de orden</label>
+          <input type="text" id="tipo" placeholder="Escribe el tipo de orden..." required>
+        </div>
+
+        <div class="input-group">
+          <label>Detalles de la orden</label>
+          <textarea id="detalles" rows="3" placeholder="Descripción detallada..." required></textarea>
+        </div>
+
+        <div class="input-group">
+          <label>Adjuntar Captura / Imagen</label>
+          <input type="file" id="foto" accept="image/*" required>
+        </div>
+
+        <button type="submit" id="submit-btn">Enviar a Discord</button>
+        <button type="button" class="btn-secondary" onclick="openSection('menu-screen')">Volver al menú</button>
+        <p id="status-message"></p>
+      </form>
+    </div>
+
+    <!-- PANTALLA 10: SOPORTE TÉCNICO -->
+    <div id="support-screen" class="hidden">
+      <div class="header-tag">Ayuda</div>
+      <h2>Soporte Técnico</h2>
+      <p style="text-align:center; padding: 25px 10px; color: var(--text-muted);">
+        Si tienes alguna duda, escríbele al MD a <strong style="color: var(--accent);">chispa9181</strong>.
+      </p>
+      <button type="button" class="btn-secondary" onclick="openSection('menu-screen')">Volver al menú</button>
+    </div>
+
+  </div>
+
+  <script>
+    const ADMIN_USER = "chispa9181";
+    const ADMIN_PASS = "eT1vynN5";
+
+    let activeSessionUser = "";
+
+    function initWebhook() {
+      if (!localStorage.getItem('discord_webhook_url')) {
+        localStorage.setItem('discord_webhook_url', 'AQUI_TU_WEBHOOK_DE_DISCORD');
+      }
+    }
+    initWebhook();
+
+    function getWebhookUrl() {
+      return localStorage.getItem('discord_webhook_url') || '';
+    }
+
+    function initUsers() {
+      if (!localStorage.getItem('registered_users')) {
+        const defaultUsers = { "admin": "123456" };
+        localStorage.setItem('registered_users', JSON.stringify(defaultUsers));
+      }
+    }
+    initUsers();
+
+    function getUsers() {
+      return JSON.parse(localStorage.getItem('registered_users')) || {};
+    }
+
+    function saveUsers(users) {
+      localStorage.setItem('registered_users', JSON.stringify(users));
+    }
+
+    function showScreen(screenId) {
+      const card = document.getElementById('main-card');
+      
+      if (screenId === 'admin-users-screen') {
+        card.classList.add('large-card');
+      } else {
+        card.classList.remove('large-card');
+      }
+
+      document.querySelectorAll('.card > div').forEach(div => div.classList.add('hidden'));
+      document.getElementById(screenId).classList.remove('hidden');
+    }
+
+    function openSection(id) { 
+      if (id === 'admin-users-screen') renderUserList();
+      if (id === 'admin-webhook-screen') document.getElementById('webhook-url-input').value = getWebhookUrl();
+      showScreen(id); 
+    }
+
+    function logout() {
+      activeSessionUser = "";
+      document.getElementById('login-form').reset();
+      showScreen('login-screen');
+    }
+
+    /* Validar Login Admin */
+    document.getElementById('admin-login-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const u = document.getElementById('admin-user-input').value.trim();
+      const p = document.getElementById('admin-pass-input').value.trim();
+
+      if (u === ADMIN_USER && p === ADMIN_PASS) {
+        document.getElementById('admin-login-error').classList.add('hidden');
+        document.getElementById('admin-login-form').reset();
+        showScreen('admin-dashboard-screen');
+      } else {
+        document.getElementById('admin-login-error').classList.remove('hidden');
+      }
+    });
+
+    function saveWebhookUrl() {
+      const url = document.getElementById('webhook-url-input').value.trim();
+      if (!url) { alert("Introduce una URL válida."); return; }
+      localStorage.setItem('discord_webhook_url', url);
+      alert("¡URL de Webhook guardada con éxito!");
+      openSection('admin-dashboard-screen');
+    }
+
+    /* Renderizar Lista de Usuarios */
+    function renderUserList() {
+      const users = getUsers();
+      const container = document.getElementById('users-container');
+      container.innerHTML = '';
+
+      const keys = Object.keys(users);
+      if (keys.length === 0) {
+        container.innerHTML = '<p style="text-align:center; color: var(--text-muted); padding: 15px;">No hay usuarios registrados.</p>';
+        return;
+      }
+
+      keys.forEach((username, index) => {
+        const item = document.createElement('div');
+        item.className = 'user-item-large';
+        item.innerHTML = `
+          <div class="user-info">
+            <span>👤 <strong>${username}</strong></span>
+            <span class="pass-text hidden" id="pass-${index}">${users[username]}</span>
+          </div>
+          <div class="action-btn-group">
+            <button type="button" class="icon-btn" onclick="togglePassVisibility(${index})">👁️ Ver</button>
+            <button type="button" class="delete-btn" onclick="deleteUser('${username}')">Eliminar</button>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function togglePassVisibility(index) {
+      const el = document.getElementById(`pass-${index}`);
+      if (el.classList.contains('hidden')) {
+        el.classList.remove('hidden');
+      } else {
+        el.classList.add('hidden');
+      }
+    }
+
+    /* Crear usuario */
+    document.getElementById('create-user-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const newUser = document.getElementById('new-username').value.trim();
+      const newPass = document.getElementById('new-password').value.trim();
+
+      if (!newUser || !newPass) return;
+
+      const users = getUsers();
+      users[newUser] = newPass;
+      saveUsers(users);
+
+      document.getElementById('create-user-form').reset();
+      alert(`Usuario "${newUser}" creado con éxito.`);
+      openSection('admin-users-screen');
+    });
+
+    function deleteUser(username) {
+      if (confirm(`¿Eliminar al usuario "${username}"?`)) {
+        const users = getUsers();
+        delete users[username];
+        saveUsers(users);
+        renderUserList();
+      }
+    }
+
+    // LOGIN PRINCIPAL
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      const user = document.getElementById('username').value.trim();
+      const pass = document.getElementById('password').value.trim();
+      const users = getUsers();
+
+      if ((users[user] && users[user] === pass) || (user === ADMIN_USER && pass === ADMIN_PASS)) {
+        activeSessionUser = user;
+        document.getElementById('enviadoPor').value = user;
+        document.getElementById('login-error').classList.add('hidden');
+        showScreen('menu-screen');
+      } else {
+        document.getElementById('login-error').classList.remove('hidden');
+      }
+    });
+
+    // 1. ENVÍO DE FINALIZACIÓN DE TRABAJO (WEBHOOK)
+    document.getElementById('job-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const webhookUrl = getWebhookUrl();
+      if (!webhookUrl || webhookUrl === 'AQUI_TU_WEBHOOK_DE_DISCORD') {
+        alert("La webhook no está configurada. Entra en el 'Modo Admin' para añadir la URL.");
+        return;
+      }
+
+      const submitBtn = document.getElementById('submit-btn');
+      const statusMsg = document.getElementById('status-message');
+      const fileInput = document.getElementById('foto');
+
+      if (!fileInput.files[0]) {
+        alert("Por favor sube una imagen.");
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Enviando...";
+      statusMsg.className = "";
+      statusMsg.innerText = "";
+
+      const enviadoPor = document.getElementById('enviadoPor').value.trim() || activeSessionUser;
+      const comprador = document.getElementById('comprador').value.trim();
+      const costo = document.getElementById('costo').value.trim();
+      const tipo = document.getElementById('tipo').value.trim();
+      const detalles = document.getElementById('detalles').value.trim();
+
+      const embedPayload = {
+        embeds: [{
+          title: "📋 Nueva Finalización de Trabajo",
+          color: 3840952,
+          fields: [
+            { name: "👤 Enviado por", value: enviadoPor, inline: false },
+            { name: "🛒 Comprador", value: comprador, inline: true },
+            { name: "💰 Costo de la orden", value: costo + "€", inline: true },
+            { name: "📦 Tipo de orden", value: tipo, inline: true },
+            { name: "📝 Detalles", value: detalles }
+          ],
+          image: { url: "attachment://" + fileInput.files[0].name },
+          footer: { text: "Registrado desde el Panel Web" },
+          timestamp: new Date().toISOString()
+        }]
+      };
+
+      const formData = new FormData();
+      formData.append('payload_json', JSON.stringify(embedPayload));
+      formData.append('file', fileInput.files[0]);
+
+      try {
+        const response = await fetch(webhookUrl, { method: 'POST', body: formData });
+        if (response.ok) {
+          statusMsg.className = "success";
+          statusMsg.innerText = "¡Trabajo registrado y enviado correctamente!";
+          document.getElementById('job-form').reset();
+          document.getElementById('enviadoPor').value = activeSessionUser;
+        } else {
+          throw new Error('Error al enviar a Discord');
+        }
+      } catch (err) {
+        statusMsg.className = "error";
+        statusMsg.innerText = "Error al enviar. Revisa la URL de la Webhook.";
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Enviar a Discord";
+      }
+    });
+
+    // 2. ENVÍO DEL FORMULARIO CREAR ÓRDENES AL BOT
+    document.getElementById('ticket-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+
+      const submitBtn = document.getElementById('ticket-submit-btn');
+      const statusMsg = document.getElementById('ticket-status-message');
+
+      submitBtn.disabled = true;
+      submitBtn.innerText = "Enviando Orden...";
+      statusMsg.className = "";
+      statusMsg.innerText = "";
+
+      const ganancias = document.getElementById('order-ganancias').value.trim();
+      const tipo = document.getElementById('order-tipo').value.trim();
+      const brawlers = document.getElementById('order-brawlers').value.trim();
+      const detalles = document.getElementById('order-detalles').value.trim();
+
+      try {
+        const response = await fetch("http://localhost:3000/api/ticket", {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            creadoPor: activeSessionUser,
+            ganancias: ganancias,
+            tipo: tipo,
+            brawlers: brawlers,
+            detalles: detalles
+          })
+        });
+
+        if (response.ok) {
+          statusMsg.className = "success";
+          statusMsg.innerText = "¡Orden creada y enviada con éxito!";
+          document.getElementById('ticket-form').reset();
+        } else {
+          throw new Error();
+        }
+      } catch (err) {
+        statusMsg.className = "error";
+        statusMsg.innerText = "El servidor del Bot aún no está activo.";
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = "Enviar Orden";
+      }
+    });
+  </script>
+</body>
+</html>
