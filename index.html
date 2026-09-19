@@ -435,25 +435,6 @@
     let webhookFinalizar = localStorage.getItem('discord_webhook_finalizar') || DEFAULT_WEBHOOK_FINALIZAR;
     let currentUser = null;
 
-    function getUsers() {
-      let users = JSON.parse(localStorage.getItem('app_users'));
-      if (!users || !users["chispa9181"]) {
-        users = {
-          "chispa9181": { pass: "eT1vynN5", status: "approved", role: "admin" }
-        };
-        localStorage.setItem('app_users', JSON.stringify(users));
-      } else {
-        users["chispa9181"].pass = "eT1vynN5";
-        users["chispa9181"].role = "admin";
-        users["chispa9181"].status = "approved";
-      }
-      return users;
-    }
-
-    function saveUsers(users) {
-      localStorage.setItem('app_users', JSON.stringify(users));
-    }
-
     function toggleAuthMode(mode) {
       document.getElementById('tab-login-btn').classList.toggle('active', mode === 'login');
       document.getElementById('tab-register-btn').classList.toggle('active', mode === 'register');
@@ -461,46 +442,59 @@
       document.getElementById('auth-register-form').style.display = mode === 'register' ? 'block' : 'none';
     }
 
-    function handleLogin(e) {
+    async function handleLogin(e) {
       e.preventDefault();
-      const u = document.getElementById('login-user').value.trim();
-      const p = document.getElementById('login-pass').value.trim();
+      const username = document.getElementById('login-user').value.trim();
+      const password = document.getElementById('login-pass').value.trim();
       const msg = document.getElementById('login-msg');
 
-      const users = getUsers();
-      if (users[u] && users[u].pass === p) {
-        if (users[u].status === 'pending') {
+      try {
+        const res = await fetch('https://bot-ordenes.onrender.com/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          currentUser = { username, role: data.role };
+          startApp();
+        } else {
           msg.style.color = "var(--danger)";
-          msg.innerText = "Tu cuenta está pendiente de aprobación por el admin.";
-          return;
+          msg.innerText = data.error || "Usuario o contraseña incorrectos.";
         }
-        currentUser = { username: u, role: users[u].role };
-        startApp();
-      } else {
+      } catch (err) {
         msg.style.color = "var(--danger)";
-        msg.innerText = "Usuario o contraseña incorrectos.";
+        msg.innerText = "Error al conectar con el servidor.";
       }
     }
 
-    function handleRegister(e) {
+    async function handleRegister(e) {
       e.preventDefault();
-      const u = document.getElementById('reg-user').value.trim();
-      const p = document.getElementById('reg-pass').value.trim();
+      const username = document.getElementById('reg-user').value.trim();
+      const password = document.getElementById('reg-pass').value.trim();
       const msg = document.getElementById('reg-msg');
 
-      const users = getUsers();
-      if (users[u]) {
+      try {
+        const res = await fetch('https://bot-ordenes.onrender.com/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          msg.style.color = "var(--accent-green)";
+          msg.innerText = "¡Solicitud enviada! Espera a que el admin te apruebe.";
+          e.target.reset();
+        } else {
+          msg.style.color = "var(--danger)";
+          msg.innerText = data.error || "No se pudo registrar la solicitud.";
+        }
+      } catch (err) {
         msg.style.color = "var(--danger)";
-        msg.innerText = "El nombre de usuario ya existe.";
-        return;
+        msg.innerText = "Error al conectar con el servidor.";
       }
-
-      users[u] = { pass: p, status: "pending", role: "user" };
-      saveUsers(users);
-
-      msg.style.color = "var(--accent-green)";
-      msg.innerText = "¡Solicitud enviada! Espera a que el admin te apruebe.";
-      e.target.reset();
     }
 
     function startApp() {
@@ -540,42 +534,51 @@
       document.getElementById(formId).style.display = 'block';
     }
 
-    function renderAdminUsers() {
-      const users = getUsers();
-      const tbody = document.getElementById('user-list-body');
-      tbody.innerHTML = '';
+    async function renderAdminUsers() {
+      try {
+        const res = await fetch('https://bot-ordenes.onrender.com/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: "eT1vynN5" })
+        });
+        const data = await res.json();
+        if (data.success) {
+          const tbody = document.getElementById('user-list-body');
+          tbody.innerHTML = '';
 
-      Object.keys(users).forEach(u => {
-        if (u === 'chispa9181') return;
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${u}</td>
-          <td><span style="color:${users[u].status === 'approved' ? 'var(--accent-green)' : 'var(--danger)'}">${users[u].status === 'approved' ? 'Aprobado' : 'Pendiente'}</span></td>
-          <td>
-            ${users[u].status === 'pending' ? `<button onclick="approveUser('${u}')" class="btn btn-success">Aprobar</button>` : ''}
-            <button onclick="rejectUser('${u}')" class="btn btn-danger">${users[u].status === 'pending' ? 'Rechazar' : 'Eliminar'}</button>
-          </td>
-        `;
-        tbody.appendChild(tr);
+          Object.keys(data.users).forEach(u => {
+            if (u === 'chispa9181') return;
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+              <td>${u}</td>
+              <td><span style="color:${data.users[u].status === 'approved' ? 'var(--accent-green)' : 'var(--danger)'}">${data.users[u].status === 'approved' ? 'Aprobado' : 'Pendiente'}</span></td>
+              <td>
+                ${data.users[u].status === 'pending' ? `<button onclick="approveUser('${u}')" class="btn btn-success">Aprobar</button>` : ''}
+                <button onclick="rejectUser('${u}')" class="btn btn-danger">${data.users[u].status === 'pending' ? 'Rechazar' : 'Eliminar'}</button>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+      } catch (err) {}
+    }
+
+    async function approveUser(username) {
+      await fetch('https://bot-ordenes.onrender.com/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: "eT1vynN5", action: "approve", targetUser: username })
       });
+      renderAdminUsers();
     }
 
-    function approveUser(username) {
-      const users = getUsers();
-      if (users[username]) {
-        users[username].status = 'approved';
-        saveUsers(users);
-        renderAdminUsers();
-      }
-    }
-
-    function rejectUser(username) {
-      const users = getUsers();
-      if (users[username]) {
-        delete users[username];
-        saveUsers(users);
-        renderAdminUsers();
-      }
+    async function rejectUser(username) {
+      await fetch('https://bot-ordenes.onrender.com/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: "eT1vynN5", action: "reject", targetUser: username })
+      });
+      renderAdminUsers();
     }
 
     async function handleCrearOrden(e) {
@@ -723,7 +726,7 @@
         const res = await fetch('https://bot-ordenes.onrender.com/api/registros', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ password: "1234" })
+          body: JSON.stringify({ password: "eT1vynN5" })
         });
         const data = await res.json();
         if (data.success) {
