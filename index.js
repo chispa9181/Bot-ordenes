@@ -4,13 +4,12 @@ const cors = require('cors');
 
 // ================= CONFIGURACIÓN DE TU BOT Y SERVIDOR DISCORD =================
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "1234"; // Clave del Modo Admin
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "1234";
 
 const GUILD_ID = "1545761394140651605";
 const CHANNEL_ID = "1545829356310495253";
 const CATEGORY_ID = null;
 
-// Arreglo en memoria para guardar el historial de registros
 const historialRegistros = [];
 
 const client = new Client({
@@ -30,7 +29,6 @@ app.post('/api/ticket', async (req, res) => {
   try {
     const { creadoPor, ganancias, tipo, brawlers, detalles } = req.body;
 
-    // Guardar en el historial de registros
     historialRegistros.unshift({
       tipoAccion: "Creación de Orden",
       usuario: creadoPor || "Anónimo",
