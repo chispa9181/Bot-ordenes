@@ -2,11 +2,10 @@ const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder
 const express = require('express');
 const cors = require('cors');
 
-// ==========================================
-// CONFIGURACIÓN DE TU BOT Y SERVIDOR DISCORD
-// ==========================================
-
+// ================= CONFIGURACIÓN DE TU BOT Y SERVIDOR DISCORD =================
 const BOT_TOKEN = process.env.BOT_TOKEN;
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "1234"; // Clave del Modo Admin
+
 const GUILD_ID = "1545761394140651605";
 const CHANNEL_ID = "1545829356310495253";
 const CATEGORY_ID = null;
@@ -26,9 +25,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ==========================================
-// ENDPOINT: CREAR ÓRDENES
-// ==========================================
+// ================= ENDPOINT: CREAR ÓRDENES =================
 app.post('/api/ticket', async (req, res) => {
   try {
     const { creadoPor, ganancias, tipo, brawlers, detalles } = req.body;
@@ -72,14 +69,11 @@ app.post('/api/ticket', async (req, res) => {
   }
 });
 
-// ==========================================
-// ENDPOINT: FINALIZACIÓN DE TRABAJOS
-// ==========================================
+// ================= ENDPOINT: FINALIZACIÓN DE TRABAJOS =================
 app.post('/api/finalizar-trabajo', async (req, res) => {
   try {
     const { usuario, trabajo, detalles } = req.body;
 
-    // Guardar en el historial de registros
     historialRegistros.unshift({
       tipoAccion: "Finalización de Trabajo",
       usuario: usuario || "Anónimo",
@@ -93,24 +87,26 @@ app.post('/api/finalizar-trabajo', async (req, res) => {
   }
 });
 
-// ==========================================
-// ENDPOINT: OBTENER REGISTROS PARA MODO ADMIN
-// ==========================================
-app.get('/api/registros', (req, res) => {
-  res.json({ registros: historialRegistros });
+// ================= ENDPOINT: OBTENER REGISTROS PARA MODO ADMIN =================
+app.post('/api/registros', (req, res) => {
+  const { password } = req.body;
+
+  if (password && password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ success: false, error: "Contraseña incorrecta" });
+  }
+
+  res.json({ success: true, registros: historialRegistros });
 });
 
-// ==========================================
-// INTERACCIONES: BOTONES DISCORD
-// ==========================================
+// ================= INTERACCIONES: BOTONES DISCORD =================
 client.on('interactionCreate', async (interaction) => {
   if (!interaction.isButton()) return;
 
   if (interaction.customId === 'claim_order_btn') {
     const guild = interaction.guild;
     const user = interaction.user;
-
     const originalEmbed = interaction.message.embeds[0];
+
     const updatedEmbed = EmbedBuilder.from(originalEmbed)
       .setColor(5763719)
       .setFields(
@@ -143,7 +139,7 @@ client.on('interactionCreate', async (interaction) => {
     });
 
     const ticketEmbed = new EmbedBuilder()
-      .setTitle(`🎟️ Ticket de Orden Iniciado`)
+      .setTitle("🎟️ Ticket de Orden Iniciado")
       .setDescription(`¡Hola <@${user.id}>! Un administrador te atenderá lo antes posible.`)
       .setColor(3840952)
       .setFooter({ text: "Sistema de Soporte de Órdenes" })
@@ -156,14 +152,16 @@ client.on('interactionCreate', async (interaction) => {
         .setStyle(ButtonStyle.Danger)
     );
 
-    await ticketChannel.send({ content: `👋 <@${user.id}>`, embeds: [ticketEmbed], components: [closeRow] });
+    await ticketChannel.send({ content: `<@${user.id}>`, embeds: [ticketEmbed], components: [closeRow] });
     await interaction.reply({ content: `¡Orden reclamada con éxito! Ve al canal <#${ticketChannel.id}>`, ephemeral: true });
   }
 
   if (interaction.customId === 'close_ticket_btn') {
     await interaction.reply({ content: '🔒 Este ticket se cerrará en **5 segundos**...' });
     setTimeout(async () => {
-      try { await interaction.channel.delete(); } catch (err) {}
+      try {
+        await interaction.channel.delete();
+      } catch (err) {}
     }, 5000);
   }
 });
@@ -171,5 +169,5 @@ client.on('interactionCreate', async (interaction) => {
 client.login(BOT_TOKEN);
 
 app.listen(3000, () => {
-  console.log('🤖 Servidor del Bot encendido y listo en http://localhost:3000');
+  console.log('🤖 Servidor del Bot encendido y listo en el puerto 3000');
 });
