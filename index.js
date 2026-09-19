@@ -59,7 +59,7 @@ expressApp.post('/api/register', (req, res) => {
     return res.status(400).json({ success: false, error: "Faltan datos" });
   }
   
-  serverUsers = loadUsers(); // Recargar por seguridad
+  serverUsers = loadUsers();
   if (serverUsers[username]) {
     return res.status(400).json({ success: false, error: "El nombre de usuario ya existe" });
   }
@@ -80,7 +80,7 @@ expressApp.post('/api/register', (req, res) => {
 // ================= ENDPOINT: LOGIN DE USUARIOS =================
 expressApp.post('/api/login', (req, res) => {
   const { username, password } = req.body;
-  serverUsers = loadUsers(); // Recargar datos actualizados
+  serverUsers = loadUsers();
   const user = serverUsers[username];
 
   if (!user || user.pass !== password) {
