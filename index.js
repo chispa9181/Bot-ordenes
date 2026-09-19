@@ -1,6 +1,7 @@
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits } = require('discord.js');
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
 
 // ================= CONFIGURACIÓN DE TU BOT Y SERVIDOR DISCORD =================
 const BOT_TOKEN = process.env.BOT_TOKEN;
@@ -11,11 +12,33 @@ const CHANNEL_ID = "1545829356310495253";
 const CATEGORY_ID = null;
 
 const historialRegistros = [];
+const USERS_FILE = './users.json';
 
-// Base de datos centralizada de usuarios en el servidor
-const serverUsers = {
-  "chispa9181": { pass: "eT1vynN5", status: "approved", role: "admin" }
-};
+// Cargar usuarios desde archivo o inicializar con el admin por defecto
+function loadUsers() {
+  try {
+    if (fs.existsSync(USERS_FILE)) {
+      const data = fs.readFileSync(USERS_FILE, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    console.error("Error al leer users.json:", err);
+  }
+  return {
+    "chispa9181": { pass: "eT1vynN5", status: "approved", role: "admin" }
+  };
+}
+
+// Guardar usuarios en el archivo persistente
+function saveUsersToFile(users) {
+  try {
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
+  } catch (err) {
+    console.error("Error al guardar users.json:", err);
+  }
+}
+
+let serverUsers = loadUsers();
 
 const client = new Client({
   intents: [
@@ -35,12 +58,15 @@ expressApp.post('/api/register', (req, res) => {
   if (!username || !password) {
     return res.status(400).json({ success: false, error: "Faltan datos" });
   }
+  
+  serverUsers = loadUsers(); // Recargar por seguridad
   if (serverUsers[username]) {
     return res.status(400).json({ success: false, error: "El nombre de usuario ya existe" });
   }
 
   serverUsers[username] = { pass: password, status: "pending", role: "user" };
-  
+  saveUsersToFile(serverUsers);
+
   historialRegistros.unshift({
     tipoAccion: "Registro de Usuario",
     usuario: username,
@@ -54,6 +80,7 @@ expressApp.post('/api/register', (req, res) => {
 // ================= ENDPOINT: LOGIN DE USUARIOS =================
 expressApp.post('/api/login', (req, res) => {
   const { username, password } = req.body;
+  serverUsers = loadUsers(); // Recargar datos actualizados
   const user = serverUsers[username];
 
   if (!user || user.pass !== password) {
@@ -73,10 +100,14 @@ expressApp.post('/api/users', (req, res) => {
     return res.status(401).json({ success: false, error: "No autorizado" });
   }
 
+  serverUsers = loadUsers();
+
   if (action === "approve" && serverUsers[targetUser]) {
     serverUsers[targetUser].status = "approved";
+    saveUsersToFile(serverUsers);
   } else if (action === "reject" && targetUser && targetUser !== "chispa9181") {
     delete serverUsers[targetUser];
+    saveUsersToFile(serverUsers);
   }
 
   res.json({ success: true, users: serverUsers });
