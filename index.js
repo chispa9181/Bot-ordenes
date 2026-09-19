@@ -1,6 +1,7 @@
 const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits } = require('discord.js');
 const express = require('express');
 const cors = require('cors');
+const fs = require('fs');
 
 // ================= CONFIGURACIÓN DE TU BOT Y SERVIDOR DISCORD =================
 const BOT_TOKEN = process.env.BOT_TOKEN;
@@ -11,43 +12,41 @@ const CHANNEL_ID = "1545829356310495253";
 const CATEGORY_ID = null;
 
 const historialRegistros = [];
+const USERS_FILE = './users.json';
 
-// ================= CONFIGURACIÓN DE JSONBIN.IO (NUBE PERSISTENTE) =================
-const JSONBIN_BIN_ID = process.env.JSONBIN_BIN_ID || "PEG_AQUI_TU_BIN_ID";
-const JSONBIN_API_KEY = process.env.JSONBIN_API_KEY || "PEG_AQUI_TU_MASTER_KEY";
-
-// Funciones para leer y escribir en la nube de JSONBin
-async function loadUsersFromCloud() {
+// Cargar usuarios de forma segura y persistente
+function loadUsers() {
   try {
-    const res = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-      headers: { 'X-Master-Key': JSONBIN_API_KEY }
-    });
-    const data = await res.json();
-    if (data && data.record) {
-      return data.record;
+    if (fs.existsSync(USERS_FILE)) {
+      const data = fs.readFileSync(USERS_FILE, 'utf8');
+      const parsed = JSON.parse(data);
+      // Asegurar que el admin principal siempre esté presente
+      if (!parsed["chispa9181"]) {
+        parsed["chispa9181"] = { pass: "eT1vynN5", status: "approved", role: "admin" };
+      }
+      return parsed;
     }
   } catch (err) {
-    console.error("Error al leer usuarios de la nube:", err);
+    console.error("Error al leer users.json:", err);
   }
-  return {
-    "chispa9181": { "pass": "eT1vynN5", "status": "approved", "role": "admin" }
+  
+  // Si no existe, inicializar con el admin por defecto
+  const defaultUsers = {
+    "chispa9181": { pass: "eT1vynN5", status: "approved", role: "admin" }
   };
+  saveUsersToFile(defaultUsers);
+  return defaultUsers;
 }
 
-async function saveUsersToCloud(users) {
+function saveUsersToFile(users) {
   try {
-    await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Master-Key': JSONBIN_API_KEY
-      },
-      body: JSON.stringify(users)
-    });
+    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
   } catch (err) {
-    console.error("Error al guardar usuarios en la nube:", err);
+    console.error("Error al guardar users.json:", err);
   }
 }
+
+let serverUsers = loadUsers();
 
 const client = new Client({
   intents: [
@@ -62,22 +61,20 @@ expressApp.use(cors());
 expressApp.use(express.json());
 
 // ================= ENDPOINT: REGISTRO DE USUARIOS =================
-expressApp.post('/api/register', async (req, res) => {
+expressApp.post('/api/register', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) {
     return res.status(400).json({ success: false, error: "Faltan datos" });
   }
   
-  let serverUsers = await loadUsersFromCloud();
-  console.log("Usuarios cargados antes del registro:", serverUsers);
-
+  serverUsers = loadUsers(); // Recargar siempre el archivo actual
   if (serverUsers[username]) {
     return res.status(400).json({ success: false, error: "El nombre de usuario ya existe" });
   }
 
   serverUsers[username] = { pass: password, status: "pending", role: "user" };
-  await saveUsersToCloud(serverUsers);
-  console.log("Usuario guardado en la nube con éxito:", username);
+  saveUsersToFile(serverUsers);
+  console.log("Nuevo usuario registrado y guardado:", username);
 
   historialRegistros.unshift({
     tipoAccion: "Registro de Usuario",
@@ -90,9 +87,9 @@ expressApp.post('/api/register', async (req, res) => {
 });
 
 // ================= ENDPOINT: LOGIN DE USUARIOS =================
-expressApp.post('/api/login', async (req, res) => {
+expressApp.post('/api/login', (req, res) => {
   const { username, password } = req.body;
-  let serverUsers = await loadUsersFromCloud();
+  serverUsers = loadUsers();
   const user = serverUsers[username];
 
   if (!user || user.pass !== password) {
@@ -106,20 +103,20 @@ expressApp.post('/api/login', async (req, res) => {
 });
 
 // ================= ENDPOINT: GESTIÓN DE USUARIOS (ADMIN) =================
-expressApp.post('/api/users', async (req, res) => {
+expressApp.post('/api/users', (req, res) => {
   const { password, action, targetUser } = req.body;
   if (password !== ADMIN_PASSWORD) {
     return res.status(401).json({ success: false, error: "No autorizado" });
   }
 
-  let serverUsers = await loadUsersFromCloud();
+  serverUsers = loadUsers();
 
   if (action === "approve" && serverUsers[targetUser]) {
     serverUsers[targetUser].status = "approved";
-    await saveUsersToCloud(serverUsers);
+    saveUsersToFile(serverUsers);
   } else if (action === "reject" && targetUser && targetUser !== "chispa9181") {
     delete serverUsers[targetUser];
-    await saveUsersToCloud(serverUsers);
+    saveUsersToFile(serverUsers);
   }
 
   res.json({ success: true, users: serverUsers });
@@ -227,7 +224,7 @@ expressApp.post('/api/duda', async (req, res) => {
     if (discordRes.ok) {
       res.json({ success: true });
     } else {
-      res.status(500).json({ success: false, error: "Error al conectar con Discord" });
+      res.status(500).json({ success: false, error: "Error al conectarกับ Discord" });
     }
   } catch (error) {
     console.error("Error al procesar la duda:", error);
