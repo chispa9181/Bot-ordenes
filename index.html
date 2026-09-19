@@ -586,7 +586,7 @@
       const detalles = document.getElementById('order-detalles').value.trim();
 
       try {
-        const response = await fetch("http://localhost:3000/api/ticket", {
+        const response = await fetch("https://bot-ordenes.onrender.com/api/ticket", {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
