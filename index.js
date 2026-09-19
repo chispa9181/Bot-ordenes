@@ -20,7 +20,6 @@ function loadUsers() {
     if (fs.existsSync(USERS_FILE)) {
       const data = fs.readFileSync(USERS_FILE, 'utf8');
       const parsed = JSON.parse(data);
-      // Asegurar que el admin principal siempre esté presente
       if (!parsed["chispa9181"]) {
         parsed["chispa9181"] = { pass: "eT1vynN5", status: "approved", role: "admin" };
       }
@@ -30,7 +29,6 @@ function loadUsers() {
     console.error("Error al leer users.json:", err);
   }
   
-  // Si no existe, inicializar con el admin por defecto
   const defaultUsers = {
     "chispa9181": { pass: "eT1vynN5", status: "approved", role: "admin" }
   };
@@ -67,14 +65,13 @@ expressApp.post('/api/register', (req, res) => {
     return res.status(400).json({ success: false, error: "Faltan datos" });
   }
   
-  serverUsers = loadUsers(); // Recargar siempre el archivo actual
+  serverUsers = loadUsers();
   if (serverUsers[username]) {
     return res.status(400).json({ success: false, error: "El nombre de usuario ya existe" });
   }
 
   serverUsers[username] = { pass: password, status: "pending", role: "user" };
   saveUsersToFile(serverUsers);
-  console.log("Nuevo usuario registrado y guardado:", username);
 
   historialRegistros.unshift({
     tipoAccion: "Registro de Usuario",
@@ -186,8 +183,10 @@ expressApp.post('/api/finalizar-trabajo', async (req, res) => {
 // ================= ENDPOINT: ENVIAR DUDAS =================
 expressApp.post('/api/duda', async (req, res) => {
   try {
-    const { usuario, titulo, mensaje } = req.body;
-    const webhookUrl = "https://discord.com/api/webhooks/1545843817176109116/J6TU-V1-XiCdpFrRa-Usmx-FPokgHlEtUq1c2GQESG82pRbsoCqVJXCLXsHGh9gYNfp2";
+    const { usuario, titulo, mensaje, webhookUrl } = req.body;
+    
+    // Webhook de respaldo por defecto si no se recibe uno específico
+    const targetWebhook = webhookUrl || "https://discord.com/api/webhooks/1545843817176109116/J6TU-V1-XiCdpFrRa-Usmx-FPokgHlEtUq1c2GQESG82pRbsoCqVJXCLXsHGh9gYNfp2";
 
     historialRegistros.unshift({
       tipoAccion: "Envío de Duda",
@@ -215,7 +214,7 @@ expressApp.post('/api/duda', async (req, res) => {
       }]
     };
 
-    const discordRes = await fetch(webhookUrl, {
+    const discordRes = await fetch(targetWebhook, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
@@ -224,7 +223,9 @@ expressApp.post('/api/duda', async (req, res) => {
     if (discordRes.ok) {
       res.json({ success: true });
     } else {
-      res.status(500).json({ success: false, error: "Error al conectarกับ Discord" });
+      const errText = await discordRes.text();
+      console.error("Error de Discord al enviar duda:", errText);
+      res.status(500).json({ success: false, error: "Discord rechazó el webhook: " + errText });
     }
   } catch (error) {
     console.error("Error al procesar la duda:", error);
