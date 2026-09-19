@@ -5,7 +5,9 @@ const cors = require('cors');
 // ==========================================
 // CONFIGURACIÓN DE TU BOT Y SERVIDOR DISCORD
 // ==========================================
-const BOT_TOKEN = "MTU1MDkyMDA0Njk3MTE5NTUxMg.G3J_cD.M7jZ5TQ9sOmgNcD2LA5zE2UQN9DldW2CUlOLb4";
+require('dotenv').config();
+
+const BOT_TOKEN = process.env.BOT_TOKEN;
 const GUILD_ID = "1545761394140651605";
 const CHANNEL_ID = "1545829356310495253";
 const CATEGORY_ID = null;
