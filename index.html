@@ -322,7 +322,7 @@
           </div>
         </div>
 
-        <!-- FORMULARIO CREAR ÓRDEN STANDARD -->
+        <!-- FORMULARIO CREAR ÓRDEN -->
         <div id="form-crear-orden" class="form-container" style="display:none;">
           <h3>Crear Orden</h3>
           <form onsubmit="handleCrearOrden(event)">
@@ -347,7 +347,7 @@
           </form>
         </div>
 
-        <!-- FORMULARIO FINALIZAR TRABAJO CON FOTO Y DETALLES DEL SOLICITANTE -->
+        <!-- FORMULARIO FINALIZAR TRABAJO -->
         <div id="form-finalizar-orden" class="form-container" style="display:none; margin-top: 20px;">
           <h3>Finalizar Trabajo</h3>
           <form onsubmit="handleFinalizarTrabajo(event)">
@@ -411,10 +411,17 @@
           </table>
         </div>
 
+        <!-- CONFIGURACIÓN DE WEBHOOKS EN EL PANEL ADMIN -->
         <div class="form-container" style="max-width: 100%; margin-bottom: 30px;">
           <h3>⚙️ Webhook del Canal de Dudas</h3>
           <input type="text" id="webhook-dudas-input" style="width:100%; padding:8px; background:var(--input-bg); border:1px solid var(--border-color); color:#fff; border-radius:6px; margin-top:8px;" />
-          <button onclick="saveWebhookDudas()" class="btn btn-primary" style="margin-top:10px; width:auto; padding:8px 16px;">Guardar Webhook</button>
+          <button onclick="saveWebhookDudas()" class="btn btn-primary" style="margin-top:10px; width:auto; padding:8px 16px;">Guardar Webhook Dudas</button>
+        </div>
+
+        <div class="form-container" style="max-width: 100%; margin-bottom: 30px;">
+          <h3>⚙️ Webhook de Finalizar Trabajo</h3>
+          <input type="text" id="webhook-finalizar-input" style="width:100%; padding:8px; background:var(--input-bg); border:1px solid var(--border-color); color:#fff; border-radius:6px; margin-top:8px;" />
+          <button onclick="saveWebhookFinalizar()" class="btn btn-primary" style="margin-top:10px; width:auto; padding:8px 16px;">Guardar Webhook Finalizar Trabajo</button>
         </div>
 
         <h3>📋 Registros de Actividad</h3>
@@ -426,7 +433,10 @@
 
   <script>
     const DEFAULT_WEBHOOK_ORDENES = "https://discord.com/api/webhooks/1545843817176109116/J6TU-V1-XiCdpFrRa-Usmx-FPokgHlEtUqlc2GQESG82pRbsoCqVJXCLXsHGh9gYNfp2";
+    const DEFAULT_WEBHOOK_FINALIZAR = "https://discord.com/api/webhooks/1550972957969612880/bOIXiV8NCb2GiOzKQwbpAIlNqnZCgIx4iGIn3-_9FRkn9ggJG4Wlh-JBT0rwx9ezF7Tl";
+
     let webhookDudas = localStorage.getItem('discord_webhook_dudas') || DEFAULT_WEBHOOK_ORDENES;
+    let webhookFinalizar = localStorage.getItem('discord_webhook_finalizar') || DEFAULT_WEBHOOK_FINALIZAR;
     let currentUser = null;
 
     const initialUsers = {
@@ -508,6 +518,7 @@
         document.getElementById('admin-menu-btn').style.display = 'none';
       }
       document.getElementById('webhook-dudas-input').value = webhookDudas;
+      document.getElementById('webhook-finalizar-input').value = webhookFinalizar;
     }
 
     function logout() {
@@ -529,7 +540,7 @@
       document.getElementById(formId).style.display = 'block';
     }
 
-    /* GESTIÓN DE USUARIOS CON BOTÓN APROBAR Y RECHAZAR */
+    /* GESTIÓN DE USUARIOS */
     function renderAdminUsers() {
       const users = getUsers();
       const tbody = document.getElementById('user-list-body');
@@ -568,7 +579,7 @@
       }
     }
 
-    /* ENVIAR CREAR ÓRDEN */
+    /* CREAR ÓRDEN */
     async function handleCrearOrden(e) {
       e.preventDefault();
       const ganancias = document.getElementById('ord-ganancias').value;
@@ -597,7 +608,7 @@
       }
     }
 
-    /* FINALIZAR TRABAJO CON SOLICITANTE Y CAPTURA */
+    /* FINALIZAR TRABAJO CON ENVÍO DIRECTO A LA WEBHOOK DE DISCORD */
     async function handleFinalizarTrabajo(e) {
       e.preventDefault();
       const solicitante = document.getElementById('fin-solicitante').value.trim();
@@ -608,15 +619,36 @@
       status.style.color = "#fff";
       status.innerText = "Registrando finalización...";
 
+      const payload = {
+        embeds: [{
+          title: "✅ Trabajo Finalizado",
+          color: 65280,
+          fields: [
+            { name: "👤 Registrado por", value: currentUser.username, inline: true },
+            { name: "📩 Solicitado por", value: solicitante, inline: true },
+            { name: "📦 Tipo de Orden", value: tipo, inline: true },
+            { name: "📝 Detalles", value: detalles }
+          ],
+          timestamp: new Date().toISOString()
+        }]
+      };
+
       try {
-        const res = await fetch('https://bot-ordenes.onrender.com/api/finalizar-trabajo', {
+        const resWebhook = await fetch(webhookFinalizar, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        await fetch('https://bot-ordenes.onrender.com/api/finalizar-trabajo', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ usuario: currentUser.username, trabajo: `[${tipo}] Solicitado por ${solicitante}`, detalles })
         });
-        if (res.ok) {
+
+        if (resWebhook.ok) {
           status.style.color = "var(--accent-green)";
-          status.innerText = "¡Trabajo finalizado y registrado correctamente!";
+          status.innerText = "¡Trabajo finalizado y publicado en Discord correctamente!";
           e.target.reset();
           document.getElementById('fin-solicitante').value = currentUser.username;
         } else { throw new Error(); }
@@ -670,7 +702,14 @@
       const val = document.getElementById('webhook-dudas-input').value.trim();
       localStorage.setItem('discord_webhook_dudas', val);
       webhookDudas = val;
-      alert("Webhook guardada correctamente.");
+      alert("Webhook de dudas guardada correctamente.");
+    }
+
+    function saveWebhookFinalizar() {
+      const val = document.getElementById('webhook-finalizar-input').value.trim();
+      localStorage.setItem('discord_webhook_finalizar', val);
+      webhookFinalizar = val;
+      alert("Webhook de finalizar trabajo guardada correctamente.");
     }
 
     async function fetchRegistros() {
