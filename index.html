@@ -31,7 +31,6 @@
       overflow: hidden;
     }
 
-    /* PANTALLA DE AUTH */
     #auth-screen {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -73,14 +72,12 @@
       border-color: var(--accent-blue);
     }
 
-    /* APP CONTAINER */
     #app-container {
       display: none;
       width: 100%;
       height: 100%;
     }
 
-    /* SIDEBAR IZQUIERDO */
     .sidebar {
       width: 260px;
       background-color: var(--sidebar-bg);
@@ -126,7 +123,6 @@
       color: #fff;
     }
 
-    /* TARJETA USUARIO */
     .user-card {
       background-color: var(--card-bg);
       border: 1px solid var(--border-color);
@@ -163,7 +159,6 @@
       text-align: left;
     }
 
-    /* CONTENIDO PRINCIPAL */
     .main-content {
       flex: 1;
       padding: 40px;
@@ -347,13 +342,13 @@
           </form>
         </div>
 
-        <!-- FORMULARIO FINALIZAR TRABAJO -->
+        <!-- FORMULARIO FINALIZAR TRABAJO ACTUALIZADO -->
         <div id="form-finalizar-orden" class="form-container" style="display:none; margin-top: 20px;">
           <h3>Finalizar Trabajo</h3>
           <form onsubmit="handleFinalizarTrabajo(event)">
             <div class="input-group">
               <label>📷 Adjuntar Captura / Foto</label>
-              <input type="file" id="fin-foto" accept="image/*" />
+              <input type="file" id="fin-foto" accept="image/*" required />
             </div>
             <div class="input-group">
               <label>👤 Solicitante de la Orden</label>
@@ -364,8 +359,12 @@
               <input type="text" id="fin-tipo" required placeholder="Ej: Normal, Express, VIP..." />
             </div>
             <div class="input-group">
+              <label>💰 Coste / Cuánto ha costado (€)</label>
+              <input type="number" id="fin-coste" required placeholder="0" />
+            </div>
+            <div class="input-group">
               <label>📝 Detalles de la Orden</label>
-              <textarea id="fin-detalles" rows="4" required placeholder="Describe los detalles de la orden finalizada..."></textarea>
+              <textarea id="fin-detalles" rows="3" required placeholder="Describe los detalles de la orden finalizada..."></textarea>
             </div>
             <button type="submit" class="btn btn-primary">Registrar Finalización</button>
             <div id="msg-fin-orden" class="status-msg"></div>
@@ -411,7 +410,6 @@
           </table>
         </div>
 
-        <!-- CONFIGURACIÓN DE WEBHOOKS EN EL PANEL ADMIN -->
         <div class="form-container" style="max-width: 100%; margin-bottom: 30px;">
           <h3>⚙️ Webhook del Canal de Dudas</h3>
           <input type="text" id="webhook-dudas-input" style="width:100%; padding:8px; background:var(--input-bg); border:1px solid var(--border-color); color:#fff; border-radius:6px; margin-top:8px;" />
@@ -432,7 +430,7 @@
   </div>
 
   <script>
-    const DEFAULT_WEBHOOK_ORDENES = "https://discord.com/api/webhooks/1545843817176109116/J6TU-V1-XiCdpFrRa-Usmx-FPokgHlEtUqlc2GQESG82pRbsoCqVJXCLXsHGh9gYNfp2";
+    const DEFAULT_WEBHOOK_ORDENES = "https://discord.com/api/webhooks/1545843817176109116/J6TU-V1-XiCdpFrRa-Usmx-FPokgHlEtUq1c2GQESG82pRbsoCqVJXCLXsHGh9gYNfp2";
     const DEFAULT_WEBHOOK_FINALIZAR = "https://discord.com/api/webhooks/1550972957969612880/bOIXiV8NCb2GiOzKQwbpAIlNqnZCgIx4iGIn3-_9FRkn9ggJG4Wlh-JBT0rwx9ezF7Tl";
 
     let webhookDudas = localStorage.getItem('discord_webhook_dudas') || DEFAULT_WEBHOOK_ORDENES;
@@ -540,7 +538,6 @@
       document.getElementById(formId).style.display = 'block';
     }
 
-    /* GESTIÓN DE USUARIOS */
     function renderAdminUsers() {
       const users = getUsers();
       const tbody = document.getElementById('user-list-body');
@@ -579,7 +576,6 @@
       }
     }
 
-    /* CREAR ÓRDEN */
     async function handleCrearOrden(e) {
       e.preventDefault();
       const ganancias = document.getElementById('ord-ganancias').value;
@@ -608,18 +604,21 @@
       }
     }
 
-    /* FINALIZAR TRABAJO CON ENVÍO DIRECTO A LA WEBHOOK DE DISCORD */
+    /* FINALIZAR TRABAJO CON ENVÍO DE FOTO Y COSTE A DISCORD */
     async function handleFinalizarTrabajo(e) {
       e.preventDefault();
+      const fileInput = document.getElementById('fin-foto');
       const solicitante = document.getElementById('fin-solicitante').value.trim();
       const tipo = document.getElementById('fin-tipo').value.trim();
+      const coste = document.getElementById('fin-coste').value.trim();
       const detalles = document.getElementById('fin-detalles').value.trim();
       const status = document.getElementById('msg-fin-orden');
 
       status.style.color = "#fff";
-      status.innerText = "Registrando finalización...";
+      status.innerText = "Enviando trabajo y foto a Discord...";
 
-      const payload = {
+      const formData = new FormData();
+      const embedPayload = {
         embeds: [{
           title: "✅ Trabajo Finalizado",
           color: 65280,
@@ -627,38 +626,42 @@
             { name: "👤 Registrado por", value: currentUser.username, inline: true },
             { name: "📩 Solicitado por", value: solicitante, inline: true },
             { name: "📦 Tipo de Orden", value: tipo, inline: true },
+            { name: "💰 Coste", value: `${coste} €`, inline: true },
             { name: "📝 Detalles", value: detalles }
           ],
           timestamp: new Date().toISOString()
         }]
       };
 
+      formData.append('payload_json', JSON.stringify(embedPayload));
+      if (fileInput.files[0]) {
+        formData.append('file', fileInput.files[0]);
+      }
+
       try {
         const resWebhook = await fetch(webhookFinalizar, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: formData
         });
 
         await fetch('https://bot-ordenes.onrender.com/api/finalizar-trabajo', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ usuario: currentUser.username, trabajo: `[${tipo}] Solicitado por ${solicitante}`, detalles })
+          body: JSON.stringify({ usuario: currentUser.username, trabajo: `[${tipo}] Solicitado por ${solicitante} - Coste: ${coste}€`, detalles })
         });
 
         if (resWebhook.ok) {
           status.style.color = "var(--accent-green)";
-          status.innerText = "¡Trabajo finalizado y publicado en Discord correctamente!";
+          status.innerText = "¡Trabajo finalizado y publicado con foto en Discord!";
           e.target.reset();
           document.getElementById('fin-solicitante').value = currentUser.username;
         } else { throw new Error(); }
       } catch (err) {
         status.style.color = "var(--danger)";
-        status.innerText = "Error al registrar la finalización del trabajo.";
+        status.innerText = "Error al enviar el trabajo a Discord.";
       }
     }
 
-    /* ENVIAR DUDA */
     async function handleEnviarDuda(e) {
       e.preventDefault();
       const titulo = document.getElementById('duda-titulo').value;
