@@ -20,19 +20,19 @@ const client = new Client({
   ]
 });
 
-const app = express();
-app.use(cors());
-app.use(express.json());
+const expressApp = express();
+expressApp.use(cors());
+expressApp.use(express.json());
 
 // ================= ENDPOINT: CREAR ÓRDENES =================
-app.post('/api/ticket', async (req, res) => {
+expressApp.post('/api/ticket', async (req, res) => {
   try {
     const { creadoPor, ganancias, tipo, brawlers, detalles } = req.body;
 
     historialRegistros.unshift({
       tipoAccion: "Creación de Orden",
       usuario: creadoPor || "Anónimo",
-      detalles: `Tipo: ${tipo || 'Normal'} | Ganancias: ${ganancias}€ | Brawlers: ${brawlers || 'Ninguno'}`,
+      detalles: `Tipo: ${tipo || 'Normal'} | Ganancias: ${ganancias}€ \vert{} Brawlers:${brawlers || 'Ninguno'}`,
       fecha: new Date().toLocaleString("es-ES")
     });
 
@@ -68,14 +68,14 @@ app.post('/api/ticket', async (req, res) => {
 });
 
 // ================= ENDPOINT: FINALIZACIÓN DE TRABAJOS =================
-app.post('/api/finalizar-trabajo', async (req, res) => {
+expressApp.post('/api/finalizar-trabajo', async (req, res) => {
   try {
     const { usuario, trabajo, detalles } = req.body;
 
     historialRegistros.unshift({
       tipoAccion: "Finalización de Trabajo",
       usuario: usuario || "Anónimo",
-      detalles: `Trabajo: ${trabajo} | Info: ${detalles || 'Sin detalles adicionales'}`,
+      detalles: `Trabajo: ${trabajo} \vert{} Info:${detalles || 'Sin detalles adicionales'}`,
       fecha: new Date().toLocaleString("es-ES")
     });
 
@@ -85,8 +85,59 @@ app.post('/api/finalizar-trabajo', async (req, res) => {
   }
 });
 
+// ================= ENDPOINT: ENVIAR DUDAS =================
+expressApp.post('/api/duda', async (req, res) => {
+  try {
+    const { usuario, titulo, mensaje } = req.body;
+    
+    // Webhook predeterminada para dudas
+    const webhookUrl = "https://discord.com/api/webhooks/1545843817176109116/J6TU-V1-XiCdpFrRa-Usmx-FPokgHlEtUq1c2GQESG82pRbsoCqVJXCLXsHGh9gYNfp2";
+
+    historialRegistros.unshift({
+      tipoAccion: "Envío de Duda",
+      usuario: usuario || "Anónimo",
+      detalles: `Asunto: ${titulo}`,
+      fecha: new Date().toLocaleString("es-ES")
+    });
+
+    const payload = {
+      username: "BrawlPush Bot",
+      avatar_url: "https://i.imgur.com/4M34hi2.png",
+      embeds: [{
+        title: "💬 **NUEVA CONSULTA / DUDA**",
+        color: 3447003,
+        fields: [
+          { name: "👤 **Miembro del Staff**", value: `\`${usuario || "Anónimo"}\``, inline: true },
+          { name: "📌 **Asunto**", value: `**${titulo}**`, inline: false },
+          { name: "📝 **Mensaje / Consulta**", value: `> ${mensaje}`, inline: false }
+        ],
+        footer: {
+          text: "BrawlPush Soporte Interno",
+          icon_url: "https://i.imgur.com/4M34hi2.png"
+        },
+        timestamp: new Date().toISOString()
+      }]
+    };
+
+    const discordRes = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+
+    if (discordRes.ok) {
+      res.json({ success: true });
+    } else {
+      res.status(500).json({ success: false, error: "Error al conectar con Discord" });
+    }
+  } catch (error) {
+    console.error("Error al procesar la duda:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // ================= ENDPOINT: OBTENER REGISTROS PARA MODO ADMIN =================
-app.post('/api/registros', (req, res) => {
+expressApp.post('/api/registros', (req, res) => {
   const { password } = req.body;
 
   if (password && password !== ADMIN_PASSWORD) {
@@ -166,6 +217,6 @@ client.on('interactionCreate', async (interaction) => {
 
 client.login(BOT_TOKEN);
 
-app.listen(3000, () => {
+expressApp.listen(3000, () => {
   console.log('🤖 Servidor del Bot encendido y listo en el puerto 3000');
 });
