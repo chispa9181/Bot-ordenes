@@ -4,13 +4,18 @@ const cors = require('cors');
 
 // ================= CONFIGURACIÓN DE TU BOT Y SERVIDOR DISCORD =================
 const BOT_TOKEN = process.env.BOT_TOKEN;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "1234";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "eT1vynN5";
 
 const GUILD_ID = "1545761394140651605";
 const CHANNEL_ID = "1545829356310495253";
 const CATEGORY_ID = null;
 
 const historialRegistros = [];
+
+// Base de datos centralizada de usuarios en el servidor
+const serverUsers = {
+  "chispa9181": { pass: "eT1vynN5", status: "approved", role: "admin" }
+};
 
 const client = new Client({
   intents: [
@@ -23,6 +28,59 @@ const client = new Client({
 const expressApp = express();
 expressApp.use(cors());
 expressApp.use(express.json());
+
+// ================= ENDPOINT: REGISTRO DE USUARIOS =================
+expressApp.post('/api/register', (req, res) => {
+  const { username, password } = req.body;
+  if (!username || !password) {
+    return res.status(400).json({ success: false, error: "Faltan datos" });
+  }
+  if (serverUsers[username]) {
+    return res.status(400).json({ success: false, error: "El nombre de usuario ya existe" });
+  }
+
+  serverUsers[username] = { pass: password, status: "pending", role: "user" };
+  
+  historialRegistros.unshift({
+    tipoAccion: "Registro de Usuario",
+    usuario: username,
+    detalles: "Nueva cuenta solicitada (Pendiente de aprobación)",
+    fecha: new Date().toLocaleString("es-ES")
+  });
+
+  res.json({ success: true });
+});
+
+// ================= ENDPOINT: LOGIN DE USUARIOS =================
+expressApp.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  const user = serverUsers[username];
+
+  if (!user || user.pass !== password) {
+    return res.status(401).json({ success: false, error: "Usuario o contraseña incorrectos" });
+  }
+  if (user.status !== "approved") {
+    return res.status(403).json({ success: false, error: "Tu cuenta está pendiente de aprobación por el admin." });
+  }
+
+  res.json({ success: true, role: user.role });
+});
+
+// ================= ENDPOINT: GESTIÓN DE USUARIOS (ADMIN) =================
+expressApp.post('/api/users', (req, res) => {
+  const { password, action, targetUser } = req.body;
+  if (password !== ADMIN_PASSWORD) {
+    return res.status(401).json({ success: false, error: "No autorizado" });
+  }
+
+  if (action === "approve" && serverUsers[targetUser]) {
+    serverUsers[targetUser].status = "approved";
+  } else if (action === "reject" && targetUser && targetUser !== "chispa9181") {
+    delete serverUsers[targetUser];
+  }
+
+  res.json({ success: true, users: serverUsers });
+});
 
 // ================= ENDPOINT: CREAR ÓRDENES =================
 expressApp.post('/api/ticket', async (req, res) => {
@@ -89,8 +147,6 @@ expressApp.post('/api/finalizar-trabajo', async (req, res) => {
 expressApp.post('/api/duda', async (req, res) => {
   try {
     const { usuario, titulo, mensaje } = req.body;
-    
-    // Webhook predeterminada para dudas
     const webhookUrl = "https://discord.com/api/webhooks/1545843817176109116/J6TU-V1-XiCdpFrRa-Usmx-FPokgHlEtUq1c2GQESG82pRbsoCqVJXCLXsHGh9gYNfp2";
 
     historialRegistros.unshift({
