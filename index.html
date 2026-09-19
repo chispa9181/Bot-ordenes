@@ -607,7 +607,6 @@
       }
     }
 
-    /* MENSAJE ESTÉTICO MEJORADO PARA FINALIZAR TRABAJO */
     async function handleFinalizarTrabajo(e) {
       e.preventDefault();
       const fileInput = document.getElementById('fin-foto');
@@ -628,7 +627,7 @@
         embeds: [{
           title: "✨ **TRABAJO FINALIZADO - BRAWLPUSH** ✨",
           description: "Se ha completado una nueva orden de servicio con éxito.",
-          color: 16776960, // Color amarillo/dorado estético
+          color: 16776960,
           fields: [
             { name: "👤 **Staff Responsable**", value: `\`${currentUser.username}\``, inline: true },
             { name: "📩 **Cliente / Solicitante**", value: `\`${solicitante}\``, inline: true },
@@ -661,12 +660,12 @@
         await fetch('https://bot-ordenes.onrender.com/api/finalizar-trabajo', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ usuario: currentUser.username, trabajo: `[${tipo}] Solicitado por ${solicitante} - Coste:${coste}€`, detalles })
+          body: JSON.stringify({ usuario: currentUser.username, trabajo: `[${tipo}] Solicitado por ${solicitante} - Coste: ${coste}€`, detalles })
         });
 
         if (resWebhook.ok) {
           status.style.color = "var(--accent-green)";
-          status.innerText = "¡Trabajo finalizado y publicado con diseño estético en Discord!";
+          status.innerText = "¡Trabajo finalizado y publicado con diseño estético!";
           e.target.reset();
           document.getElementById('fin-solicitante').value = currentUser.username;
         } else { throw new Error(); }
@@ -676,7 +675,6 @@
       }
     }
 
-    /* MENSAJE ESTÉTICO MEJORADO PARA DUDAS */
     async function handleEnviarDuda(e) {
       e.preventDefault();
       const titulo = document.getElementById('duda-titulo').value;
@@ -686,39 +684,23 @@
       status.style.color = "#fff";
       status.innerText = "Enviando duda...";
 
-      const payload = {
-        username: "BrawlPush Bot",
-        avatar_url: "https://i.imgur.com/4M34hi2.png",
-        embeds: [{
-          title: "💬 **NUEVA CONSULTA / DUDA**",
-          color: 3447003, // Color azul estético
-          fields: [
-            { name: "👤 **Miembro del Staff**", value: `\`${currentUser.username}\``, inline: true },
-            { name: "📌 **Asunto**", value: `**${titulo}**`, inline: false },
-            { name: "📝 **Mensaje / Consulta**", value: `> ${mensaje}`, inline: false }
-          ],
-          footer: {
-            text: "BrawlPush Soporte Interno",
-            icon_url: "https://i.imgur.com/4M34hi2.png"
-          },
-          timestamp: new Date().toISOString()
-        }]
-      };
-
       try {
-        const res = await fetch(webhookDudas, {
+        const res = await fetch('https://bot-ordenes.onrender.com/api/duda', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ usuario: currentUser.username, titulo, mensaje })
         });
+        
         if (res.ok) {
           status.style.color = "var(--accent-green)";
           status.innerText = "¡Duda enviada con éxito!";
           e.target.reset();
-        } else { throw new Error(); }
+        } else { 
+          throw new Error(); 
+        }
       } catch (err) {
         status.style.color = "var(--danger)";
-        status.innerText = "Error al enviar la duda a Discord.";
+        status.innerText = "Error al enviar la duda al servidor.";
       }
     }
 
