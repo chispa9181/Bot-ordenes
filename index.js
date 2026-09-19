@@ -69,12 +69,15 @@ expressApp.post('/api/register', async (req, res) => {
   }
   
   let serverUsers = await loadUsersFromCloud();
+  console.log("Usuarios cargados antes del registro:", serverUsers);
+
   if (serverUsers[username]) {
     return res.status(400).json({ success: false, error: "El nombre de usuario ya existe" });
   }
 
   serverUsers[username] = { pass: password, status: "pending", role: "user" };
   await saveUsersToCloud(serverUsers);
+  console.log("Usuario guardado en la nube con éxito:", username);
 
   historialRegistros.unshift({
     tipoAccion: "Registro de Usuario",
