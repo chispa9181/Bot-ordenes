@@ -317,7 +317,6 @@
           </div>
         </div>
 
-        <!-- FORMULARIO CREAR ÓRDEN -->
         <div id="form-crear-orden" class="form-container" style="display:none;">
           <h3>Crear Orden</h3>
           <form onsubmit="handleCrearOrden(event)">
@@ -342,7 +341,6 @@
           </form>
         </div>
 
-        <!-- FORMULARIO FINALIZAR TRABAJO -->
         <div id="form-finalizar-orden" class="form-container" style="display:none; margin-top: 20px;">
           <h3>Finalizar Trabajo</h3>
           <form onsubmit="handleFinalizarTrabajo(event)">
@@ -499,6 +497,7 @@
 
       users[u] = { pass: p, status: "pending", role: "user" };
       saveUsers(users);
+
       msg.style.color = "var(--accent-green)";
       msg.innerText = "¡Solicitud enviada! Espera a que el admin te apruebe.";
       e.target.reset();
@@ -691,12 +690,13 @@
           body: JSON.stringify({ usuario: currentUser.username, titulo, mensaje })
         });
         
-        if (res.ok) {
+        const data = await res.json();
+        if (res.ok && data.success) {
           status.style.color = "var(--accent-green)";
           status.innerText = "¡Duda enviada con éxito!";
           e.target.reset();
         } else { 
-          throw new Error(); 
+          throw new Error(data.error || "Error desconocido en el servidor"); 
         }
       } catch (err) {
         status.style.color = "var(--danger)";
