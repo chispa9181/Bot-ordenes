@@ -345,7 +345,8 @@
     const DEFAULT_WEBHOOK = "https://discord.com/api/webhooks/1545843817176109116/J6TU-V1-XiCdpFrRa-Usmx-FPokgHlEtUqlc2GQESG82pRbsoCqVJXCLXsHGh9gYNfp2";
 
 function initWebhook() {
-  if (!localStorage.getItem('discord_webhook_url') || localStorage.getItem('discord_webhook_url') === 'https://discord.com/api/webhooks/1545843817176109116/J6TU-V1-XiCdpFrRa-Usmx-FPokgHlEtUqlc2GQESG82pRbsoCqVJXCLXsHGh9gYNfp2') {
+  const saved = localStorage.getItem('discord_webhook_url');
+  if (!saved || saved === 'AQUI_TU_WEBHOOK_DE_DISCORD') {
     localStorage.setItem('discord_webhook_url', DEFAULT_WEBHOOK);
   }
 }
@@ -353,7 +354,7 @@ initWebhook();
 
 function getWebhookUrl() {
   const saved = localStorage.getItem('discord_webhook_url');
-  return (saved && saved !== 'https://discord.com/api/webhooks/1545843817176109116/J6TU-V1-XiCdpFrRa-Usmx-FPokgHlEtUqlc2GQESG82pRbsoCqVJXCLXsHGh9gYNfp2') ? saved : DEFAULT_WEBHOOK;
+  return (saved && saved !== 'AQUI_TU_WEBHOOK_DE_DISCORD') ? saved : DEFAULT_WEBHOOK;
 }
 
     function initUsers() {
