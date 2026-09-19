@@ -78,7 +78,6 @@
       height: 100%;
     }
 
-    /* Menú lateral ampliado a 300px */
     .sidebar {
       width: 300px;
       background-color: var(--sidebar-bg);
@@ -261,7 +260,7 @@
           <label>Contraseña</label>
           <input type="password" id="login-pass" required placeholder="Tu contraseña" />
         </div>
-        <button type="submit" class="btn btn-blue">Entrar</button>
+        <button type="submit" id="btn-entrar" class="btn btn-blue">Entrar</button>
         <div id="login-msg" class="status-msg"></div>
       </form>
 
@@ -450,6 +449,11 @@
       const username = document.getElementById('login-user').value.trim();
       const password = document.getElementById('login-pass').value.trim();
       const msg = document.getElementById('login-msg');
+      const btnEntrar = document.getElementById('btn-entrar');
+
+      msg.style.color = "#fff";
+      msg.innerText = "Conectando con el servidor (despertando)...";
+      btnEntrar.disabled = true;
 
       try {
         const res = await fetch('https://bot-ordenes.onrender.com/api/login', {
@@ -465,10 +469,12 @@
         } else {
           msg.style.color = "var(--danger)";
           msg.innerText = data.error || "Usuario o contraseña incorrectos.";
+          btnEntrar.disabled = false;
         }
       } catch (err) {
         msg.style.color = "var(--danger)";
-        msg.innerText = "Error al conectar con el servidor.";
+        msg.innerText = "Error de red al conectar con Render.";
+        btnEntrar.disabled = false;
       }
     }
 
@@ -691,7 +697,7 @@
       status.innerText = "Enviando duda...";
 
       try {
-        const res = <span style="background-color: var(--card-bg); padding: 2px 4px; border-radius: 4px;">await fetch('https://bot-ordenes.onrender.com/api/duda', {</span>
+        const res = await fetch('https://bot-ordenes.onrender.com/api/duda', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
