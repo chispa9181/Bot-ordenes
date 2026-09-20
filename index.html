@@ -412,6 +412,76 @@
       border-color: var(--accent-gold);
     }
 
+    /* ESTILOS DEL CHAT */
+    .chat-box {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      padding: 24px;
+      max-width: 750px;
+      display: flex;
+      flex-direction: column;
+      height: 520px;
+      box-shadow: var(--shadow);
+    }
+
+    .chat-messages {
+      flex: 1;
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .chat-msg {
+      max-width: 75%;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+
+    .chat-msg.mine {
+      background: #0284c7;
+      color: #fff;
+      align-self: flex-end;
+      border-bottom-right-radius: 2px;
+    }
+
+    .chat-msg.theirs {
+      background: #1e293b;
+      color: #f8fafc;
+      align-self: flex-start;
+      border-bottom-left-radius: 2px;
+    }
+
+    .chat-msg .time {
+      font-size: 0.65rem;
+      opacity: 0.7;
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    .chat-input-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .chat-input-row input {
+      flex: 1;
+      padding: 12px 16px;
+      background: var(--input-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      color: #fff;
+      outline: none;
+    }
+
     .btn {
       width: 100%;
       padding: 14px;
@@ -507,6 +577,7 @@
         <div class="menu-group">
           <button class="menu-item active" onclick="switchTab('tab-ordenes', this)">📦 Órdenes</button>
           <button class="menu-item" onclick="switchTab('tab-dudas', this)">❓ Dudas</button>
+          <button class="menu-item" onclick="switchTab('tab-chat', this)">💬 Comunicación</button>
           <button class="menu-item" id="admin-menu-btn" style="display:none;" onclick="switchTab('tab-admin', this)">🔒 Panel Admin</button>
         </div>
       </div>
@@ -621,6 +692,27 @@
         </div>
       </div>
 
+      <!-- COMUNICACIÓN / CHAT INTERNO -->
+      <div id="tab-chat" class="section">
+        <h2 id="chat-title-heading">💬 Comunicación con Administración</h2>
+        
+        <!-- Desplegable solo visible para Admin -->
+        <div id="admin-chat-selector" style="display:none; margin-bottom: 16px; max-width: 750px;">
+          <label style="display:block; font-size:0.85rem; color:var(--text-muted); margin-bottom:6px; font-weight:600;">Seleccionar Usuario / Staff:</label>
+          <select id="chat-user-select" onchange="loadChatMessages()" style="width:100%; padding:12px 16px; background:var(--input-bg); border:1px solid var(--border-color); color:#fff; border-radius:10px; outline:none; font-size:0.95rem;"></select>
+        </div>
+
+        <div class="chat-box">
+          <div class="chat-messages" id="chat-messages-container">
+            <p style="color: var(--text-muted); text-align: center; margin-top: auto; margin-bottom: auto;">Cargando mensajes...</p>
+          </div>
+          <form onsubmit="sendChatMessage(event)" class="chat-input-row">
+            <input type="text" id="chat-input-msg" required placeholder="Escribe un mensaje..." autocomplete="off" />
+            <button type="submit" class="btn btn-blue" style="width: 120px; padding: 12px;">Enviar</button>
+          </form>
+        </div>
+      </div>
+
       <!-- PANEL ADMIN -->
       <div id="tab-admin" class="section">
         <h2>Panel de Administrador</h2>
@@ -663,6 +755,7 @@
     let webhookDudas = localStorage.getItem('discord_webhook_dudas') || DEFAULT_WEBHOOK_ORDENES;
     let webhookFinalizar = localStorage.getItem('discord_webhook_finalizar') || DEFAULT_WEBHOOK_FINALIZAR;
     let currentUser = null;
+    let allChatsData = {};
 
     function toggleAuthMode(mode) {
       document.getElementById('tab-login-btn').classList.toggle('active', mode === 'login');
@@ -741,29 +834,148 @@
       document.getElementById('fin-solicitante').value = currentUser.username;
 
       const roleLabel = document.getElementById('user-role-label');
+      const isAdmin = currentUser.username === 'chispa9181' || currentUser.role === 'admin';
       
-      if (currentUser.username === 'chispa9181' || currentUser.role === 'admin') {
+      if (isAdmin) {
         roleLabel.innerText = "ADMINISTRADOR";
         roleLabel.style.color = "var(--accent-gold)";
         document.getElementById('admin-dropdown-wrapper').style.display = 'block';
+        document.getElementById('admin-chat-selector').style.display = 'block';
         setAdminView('staff');
       } else {
         roleLabel.innerText = "STAFF";
         roleLabel.style.color = "var(--text-muted)";
         document.getElementById('admin-dropdown-wrapper').style.display = 'none';
+        document.getElementById('admin-chat-selector').style.display = 'none';
       }
 
       document.getElementById('webhook-dudas-input').value = webhookDudas;
       document.getElementById('webhook-finalizar-input').value = webhookFinalizar;
+      loadChatMessages();
     }
 
-    // Botón de refrescar dinámico (sin recargar la página ni cerrar sesión)
+    // Cargar mensajes de chat según el rol
+    async function loadChatMessages() {
+      if (!currentUser) return;
+      const isAdmin = currentUser.username === 'chispa9181' || currentUser.role === 'admin';
+
+      try {
+        const res = await fetch('https://bot-ordenes.onrender.com/api/chat/get', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: currentUser.username, isAdmin })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+          const container = document.getElementById('chat-messages-container');
+          container.innerHTML = '';
+
+          if (isAdmin) {
+            allChatsData = data.chats || {};
+            const select = document.getElementById('chat-user-select');
+            const previousSelected = select.value;
+            select.innerHTML = '';
+
+            const userKeys = Object.keys(allChatsData);
+            if (userKeys.length === 0) {
+              select.innerHTML = '<option value="">No hay chats con usuarios aún</option>';
+              container.innerHTML = '<p style="color: var(--text-muted); text-align: center; margin: auto;">No hay mensajes en este chat.</p>';
+              return;
+            }
+
+            userKeys.forEach(u => {
+              const opt = document.createElement('option');
+              opt.value = u;
+              opt.innerText = `Chat con: ${u}`;
+              select.appendChild(opt);
+            });
+
+            if (previousSelected && allChatsData[previousSelected]) {
+              select.value = previousSelected;
+            }
+
+            const currentChatUser = select.value || userKeys[0];
+            const messages = allChatsData[currentChatUser] || [];
+
+            if (messages.length === 0) {
+              container.innerHTML = `<p style="color: var(--text-muted); text-align: center; margin: auto;">Inicia una conversación con ${currentChatUser}.</p>';`;
+            } else {
+              messages.forEach(m => {
+                const div = document.createElement('div');
+                div.className = `chat-msg ${m.sender === currentUser.username ? 'mine' : 'theirs'}`;
+                div.innerHTML = `<strong>${m.sender}:</strong>${m.message}<div class="time">${m.time}</div>`;
+                container.appendChild(div);
+              });
+            }
+          } else {
+            const messages = data.messages || [];
+            if (messages.length === 0) {
+              container.innerHTML = '<p style="color: var(--text-muted); text-align: center; margin: auto;">No hay mensajes con el administrador aún. ¡Escribe el primero!</p>';
+            } else {
+              messages.forEach(m => {
+                const div = document.createElement('div');
+                div.className = `chat-msg ${m.sender === currentUser.username ? 'mine' : 'theirs'}`;
+                div.innerHTML = `<strong>${m.sender === currentUser.username ? 'Tú' : 'Admin'}:</strong> ${m.message}<div class="time">${m.time}</div>`;
+                container.appendChild(div);
+              });
+            }
+          }
+          container.scrollTop = container.scrollHeight;
+        }
+      } catch (err) {}
+    }
+
+    // Enviar mensaje en el chat
+    async function sendChatMessage(e) {
+      e.preventDefault();
+      const input = document.getElementById('chat-input-msg');
+      const message = input.value.trim();
+      if (!message) return;
+
+      const isAdmin = currentUser.username === 'chispa9181' || currentUser.role === 'admin';
+      let recipient = null;
+
+      if (isAdmin) {
+        const select = document.getElementById('chat-user-select');
+        recipient = select.value;
+        if (!recipient) {
+          alert("Selecciona un usuario primero.");
+          return;
+        }
+      }
+
+      try {
+        const res = await fetch('https://bot-ordenes.onrender.com/api/chat/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sender: currentUser.username,
+            recipient,
+            message,
+            isAdmin
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          input.value = '';
+          loadChatMessages();
+        }
+      } catch (err) {}
+    }
+
+    // Botón de refrescar dinámico
     async function refreshAppData() {
       const activeAdminTab = document.getElementById('tab-admin').classList.contains('active');
+      const activeChatTab = document.getElementById('tab-chat').classList.contains('active');
+      
       if (activeAdminTab && (currentUser.username === 'chispa9181' || currentUser.role === 'admin')) {
         await renderAdminUsers();
       }
-      // Animación sutil de confirmación visual
+      if (activeChatTab) {
+        await loadChatMessages();
+      }
+
       const btnRef = document.querySelector('.btn-refresh');
       btnRef.style.transform = 'rotate(360deg)';
       setTimeout(() => { btnRef.style.transform = 'rotate(0deg)'; }, 300);
@@ -812,6 +1024,10 @@
       document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
       document.getElementById(tabId).classList.add('active');
       if (btn) btn.classList.add('active');
+      
+      if (tabId === 'tab-chat') {
+        loadChatMessages();
+      }
     }
 
     function showForm(formId) {
