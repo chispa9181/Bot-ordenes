@@ -412,22 +412,78 @@
       border-color: var(--accent-gold);
     }
 
-    /* ESTILOS DEL CHAT */
-    .chat-box {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 16px;
-      padding: 24px;
-      max-width: 750px;
+    /* ESTILOS DE LA NUEVA BANDEJA DE CHATS (ADMIN) */
+    .chat-container-wrapper {
+      max-width: 800px;
       display: flex;
       flex-direction: column;
-      height: 520px;
+      gap: 14px;
+    }
+
+    .chat-accordion-item {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      overflow: hidden;
       box-shadow: var(--shadow);
+      transition: border-color 0.2s;
+    }
+
+    .chat-accordion-header {
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      background: linear-gradient(135deg, rgba(255,255,255,0.01), rgba(0,0,0,0.1));
+    }
+
+    .chat-accordion-header:hover {
+      background: var(--card-hover);
+    }
+
+    .chat-accordion-title {
+      font-weight: 700;
+      font-size: 1rem;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .badge-notif {
+      background: var(--danger);
+      color: #fff;
+      font-size: 0.7rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 700;
+      text-transform: uppercase;
+      animation: pulseAnim 1.5s infinite;
+    }
+
+    @keyframes pulseAnim {
+      0% { opacity: 1; }
+      50% { opacity: 0.5; }
+      100% { opacity: 1; }
+    }
+
+    .chat-accordion-body {
+      display: none;
+      padding: 20px;
+      background: var(--input-bg);
+      border-top: 1px solid var(--border-color);
+      flex-direction: column;
+      height: 450px;
+    }
+
+    .chat-accordion-body.show {
+      display: flex;
     }
 
     .chat-messages {
       flex: 1;
-      background: var(--input-bg);
+      background: var(--bg-dark);
       border: 1px solid var(--border-color);
       border-radius: 10px;
       padding: 16px;
@@ -475,7 +531,7 @@
     .chat-input-row input {
       flex: 1;
       padding: 12px 16px;
-      background: var(--input-bg);
+      background: var(--card-bg);
       border: 1px solid var(--border-color);
       border-radius: 10px;
       color: #fff;
@@ -696,19 +752,9 @@
       <div id="tab-chat" class="section">
         <h2>💬 Comunicación con Administración</h2>
         
-        <div id="admin-chat-selector" style="display:none; margin-bottom: 16px; max-width: 750px;">
-          <label style="display:block; font-size:0.85rem; color:var(--text-muted); margin-bottom:6px; font-weight:600;">Seleccionar Usuario / Staff:</label>
-          <select id="chat-user-select" onchange="loadChatMessages()" style="width:100%; padding:12px 16px; background:var(--input-bg); border:1px solid var(--border-color); color:#fff; border-radius:10px; outline:none; font-size:0.95rem;"></select>
-        </div>
-
-        <div class="chat-box">
-          <div class="chat-messages" id="chat-messages-container">
-            <p style="color: var(--text-muted); text-align: center; margin-top: auto; margin-bottom: auto;">Cargando mensajes...</p>
-          </div>
-          <form onsubmit="sendChatMessage(event)" class="chat-input-row">
-            <input type="text" id="chat-input-msg" required placeholder="Escribe un mensaje..." autocomplete="off" />
-            <button type="submit" class="btn btn-blue" style="width: 120px; padding: 12px;">Enviar</button>
-          </form>
+        <!-- Contenedor general para Admin (lista de chats) o Staff (chat único) -->
+        <div id="chats-dynamic-container" class="chat-container-wrapper">
+          <p style="color: var(--text-muted);">Cargando canales de comunicación...</p>
         </div>
       </div>
 
@@ -755,7 +801,7 @@
     let webhookFinalizar = localStorage.getItem('discord_webhook_finalizar') || DEFAULT_WEBHOOK_FINALIZAR;
     let currentUser = null;
     let allChatsData = {};
-    let lastTotalMessages = 0;
+    let lastMessageCounts = {}; // Para detectar mensajes nuevos por usuario y lanzar sonido/aviso
 
     function playNotificationSound() {
       try {
@@ -861,13 +907,11 @@
         roleLabel.innerText = "ADMINISTRADOR";
         roleLabel.style.color = "var(--accent-gold)";
         document.getElementById('admin-dropdown-wrapper').style.display = 'block';
-        document.getElementById('admin-chat-selector').style.display = 'block';
         setAdminView('staff');
       } else {
         roleLabel.innerText = "STAFF";
         roleLabel.style.color = "var(--text-muted)";
         document.getElementById('admin-dropdown-wrapper').style.display = 'none';
-        document.getElementById('admin-chat-selector').style.display = 'none';
       }
 
       document.getElementById('webhook-dudas-input').value = webhookDudas;
@@ -875,6 +919,7 @@
       loadChatMessages();
     }
 
+    // Cargar mensajes y renderizar acordeones o chat único con sonido de aviso
     async function loadChatMessages() {
       if (!currentUser) return;
       const isAdmin = currentUser.username === 'chispa9181' || currentUser.role === 'admin';
@@ -888,94 +933,127 @@
         const data = await res.json();
 
         if (data.success) {
-          const container = document.getElementById('chat-messages-container');
-          
-          let currentTotalMessages = 0;
+          const container = document.getElementById('chats-dynamic-container');
+
           if (isAdmin) {
             allChatsData = data.chats || {};
-            Object.values(allChatsData).forEach(msgs => currentTotalMessages += msgs.length);
-          } else {
-            currentTotalMessages = (data.messages || []).length;
-          }
-
-          if (lastTotalMessages > 0 && currentTotalMessages > lastTotalMessages) {
-            playNotificationSound();
-          }
-          lastTotalMessages = currentTotalMessages;
-
-          container.innerHTML = '';
-
-          if (isAdmin) {
-            const select = document.getElementById('chat-user-select');
-            const previousSelected = select.value;
-            select.innerHTML = '';
-
             const userKeys = Object.keys(allChatsData);
+
             if (userKeys.length === 0) {
-              select.innerHTML = '<option value="">No hay chats con usuarios aún</option>';
-              container.innerHTML = '<p style="color: var(--text-muted); text-align: center; margin: auto;">No hay mensajes en este chat.</p>';
+              container.innerHTML = '<p style="color: var(--text-muted);">No hay chats con usuarios activos aún.</p>';
               return;
             }
 
+            // Comprobar si hay mensajes nuevos de algún usuario para sonar la alerta
+            let hasNewActivity = false;
             userKeys.forEach(u => {
-              const opt = document.createElement('option');
-              opt.value = u;
-              opt.innerText = `Chat con: ${u}`;
-              select.appendChild(opt);
+              const count = (allChatsData[u] || []).length;
+              if (lastMessageCounts[u] !== undefined && count > lastMessageCounts[u]) {
+                hasNewActivity = true;
+              }
+              lastMessageCounts[u] = count;
             });
 
-            if (previousSelected && allChatsData[previousSelected]) {
-              select.value = previousSelected;
+            if (hasNewActivity) {
+              playNotificationSound();
             }
 
-            const currentChatUser = select.value || userKeys[0];
-            const messages = allChatsData[currentChatUser] || [];
+            // Mantener abiertos los acordeones que el admin ya tenía abiertos
+            const openAccordions = Array.from(document.querySelectorAll('.chat-accordion-body.show'))
+                                       .map(el => el.id.replace('body-', ''));
 
-            if (messages.length === 0) {
-              container.innerHTML = `<p style="color: var(--text-muted); text-align: center; margin: auto;">Inicia una conversación con ${currentChatUser}.</p>`;
-            } else {
-              messages.forEach(m => {
-                const div = document.createElement('div');
-                div.className = `chat-msg ${m.sender === currentUser.username ? 'mine' : 'theirs'}`;
-                div.innerHTML = `<strong>${m.sender}:</strong>${m.message}<div class="time">${m.time}</div>`;
-                container.appendChild(div);
-              });
-            }
+            container.innerHTML = '';
+
+            userKeys.forEach(u => {
+              const messages = allChatsData[u] || [];
+              const lastMsg = messages[messages.length - 1];
+              // Si el último mensaje fue enviado por el usuario y no por el admin, mostramos la etiqueta de notificación
+              const hasUnread = lastMsg && lastMsg.sender !== currentUser.username;
+              const isOpen = openAccordions.includes(u);
+
+              const item = document.createElement('div');
+              item.className = 'chat-accordion-item';
+              item.innerHTML = `
+                <div class="chat-accordion-header" onclick="toggleAccordion('${u}')">
+                  <div class="chat-accordion-title">
+                    💬 Chat con: <strong>${u}</strong>${hasUnread ? '<span class="badge-notif">¡Nuevo mensaje!</span>' : ''}
+                  </div>
+                  <span style="color: var(--text-muted); font-size: 0.8rem;">${isOpen ? '▲ Cerrar' : '▼ Abrir'}</span>
+                </div>
+                <div class="chat-accordion-body ${isOpen ? 'show' : ''}" id="body-${u}">
+                  <div class="chat-messages" id="msgs-${u}">
+                    ${messages.length === 0 ? '<p style="color: var(--text-muted); text-align: center; margin: auto;">No hay mensajes todavía.</p>' : 
+                      messages.map(m => `
+                        <div class="chat-msg ${m.sender === currentUser.username ? 'mine' : 'theirs'}">
+                          <strong>${m.sender}:</strong> ${m.message}
+                          <div class="time">${m.time}</div>
+                        </div>
+                      `).join('')}
+                  </div>
+                  <form onsubmit="sendAdminMessage(event, '${u}')" class="chat-input-row">
+                    <input type="text" id="input-${u}" required placeholder="Escribe una respuesta para ${u}..." autocomplete="off" />
+                    <button type="submit" class="btn btn-blue" style="width: 120px; padding: 12px;">Enviar</button>
+                  </form>
+                </div>
+              `;
+              container.appendChild(item);
+
+              // Auto-scroll al fondo del chat si está abierto
+              const msgsBox = document.getElementById(`msgs-${u}`);
+              if (msgsBox) msgsBox.scrollTop = msgsBox.scrollHeight;
+            });
+
           } else {
+            // Vista de Staff (Chat único con el Administrador)
             const messages = data.messages || [];
-            if (messages.length === 0) {
-              container.innerHTML = '<p style="color: var(--text-muted); text-align: center; margin: auto;">No hay mensajes con el administrador aún. ¡Escribe el primero!</p>';
-            } else {
-              messages.forEach(m => {
-                const div = document.createElement('div');
-                div.className = `chat-msg ${m.sender === currentUser.username ? 'mine' : 'theirs'}`;
-                div.innerHTML = `<strong>${m.sender === currentUser.username ? 'Tú' : 'Admin'}:</strong> ${m.message}<div class="time">${m.time}</div>`;
-                container.appendChild(div);
-              });
+            const count = messages.length;
+            if (lastMessageCounts['staff'] !== undefined && count > lastMessageCounts['staff']) {
+              playNotificationSound();
             }
+            lastMessageCounts['staff'] = count;
+
+            container.innerHTML = `
+              <div class="chat-box" style="max-width:100%; height:520px;">
+                <div class="chat-messages" id="chat-messages-container">
+                  ${messages.length === 0 ? '<p style="color: var(--text-muted); text-align: center; margin: auto;">No hay mensajes con el administrador aún. ¡Escribe el primero!</p>' :
+                    messages.map(m => `
+                      <div class="chat-msg ${m.sender === currentUser.username ? 'mine' : 'theirs'}">
+                        <strong>${m.sender === currentUser.username ? 'Tú' : 'Admin'}:</strong> ${m.message}
+                        <div class="time">${m.time}</div>
+                      </div>
+                    `).join('')}
+                </div>
+                <form onsubmit="sendStaffMessage(event)" class="chat-input-row">
+                  <input type="text" id="chat-input-msg" required placeholder="Escribe un mensaje al admin..." autocomplete="off" />
+                  <button type="submit" class="btn btn-blue" style="width: 120px; padding: 12px;">Enviar</button>
+                </form>
+              </div>
+            `;
+            const box = document.getElementById('chat-messages-container');
+            if (box) box.scrollTop = box.scrollHeight;
           }
-          container.scrollTop = container.scrollHeight;
         }
       } catch (err) {}
     }
 
-    async function sendChatMessage(e) {
+    // Abrir o cerrar acordeón de chat individual (Admin)
+    function toggleAccordion(username) {
+      const body = document.getElementById(`body-${username}`);
+      const isOpen = body.classList.contains('show');
+      
+      // Cerrar todos los demás o mantener abierto (aquí permitimos abrir/cerrar de forma independiente)
+      body.classList.toggle('show', !isOpen);
+      
+      // Actualizar texto del header
+      loadChatMessages();
+    }
+
+    // Enviar mensaje como Admin a un usuario específico
+    async function sendAdminMessage(e, recipient) {
       e.preventDefault();
-      const input = document.getElementById('chat-input-msg');
+      const input = document.getElementById(`input-${recipient}`);
       const message = input.value.trim();
       if (!message) return;
-
-      const isAdmin = currentUser.username === 'chispa9181' || currentUser.role === 'admin';
-      let recipient = null;
-
-      if (isAdmin) {
-        const select = document.getElementById('chat-user-select');
-        recipient = select.value;
-        if (!recipient) {
-          alert("Selecciona un usuario primero.");
-          return;
-        }
-      }
 
       try {
         const res = await fetch('https://bot-ordenes.onrender.com/api/chat/send', {
@@ -985,7 +1063,33 @@
             sender: currentUser.username,
             recipient,
             message,
-            isAdmin
+            isAdmin: true
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          input.value = '';
+          loadChatMessages();
+        }
+      } catch (err) {}
+    }
+
+    // Enviar mensaje como Staff
+    async function sendStaffMessage(e) {
+      e.preventDefault();
+      const input = document.getElementById('chat-input-msg');
+      const message = input.value.trim();
+      if (!message) return;
+
+      try {
+        const res = await fetch('https://bot-ordenes.onrender.com/api/chat/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sender: currentUser.username,
+            recipient: null,
+            message,
+            isAdmin: false
           })
         });
         const data = await res.json();
