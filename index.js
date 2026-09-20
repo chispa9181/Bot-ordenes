@@ -1,4 +1,13 @@
-const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { 
+  Client, 
+  GatewayIntentBits, 
+  EmbedBuilder, 
+  ActionRowBuilder, 
+  ButtonBuilder, 
+  ButtonStyle, 
+  ChannelType, 
+  PermissionFlagsBits 
+} = require('discord.js');
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
@@ -8,6 +17,8 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "eT1vynN5";
 
 const GUILD_ID = "1545761394140651605";
 const CHANNEL_ID = "1545829356310495253";
+// Opcional: Si tienes una categoría para los tickets, coloca su ID aquí entre comillas (ej: "123456789012345678").
+const CATEGORY_ID = null; 
 
 const USERS_FILE = './users.json';
 const CHATS_FILE = './chats.json';
@@ -58,18 +69,55 @@ const expressApp = express();
 expressApp.use(cors());
 expressApp.use(express.json());
 
-// ================= MANEJADOR DE BOTONES DE DISCORD =================
+// ================= MANEJADOR DE BOTONES Y CREACIÓN DE TICKETS =================
 client.on('interactionCreate', async interaction => {
   if (!interaction.isButton()) return;
 
   if (interaction.customId === 'claim_order_btn') {
     try {
+      await interaction.deferUpdate(); // Evita que la interacción expire
+
+      const guild = interaction.guild;
       const originalEmbed = interaction.message.embeds[0];
       if (!originalEmbed) return;
 
+      // 1. Crear el canal privado para el ticket
+      const ticketChannelName = `ticket-${interaction.user.username.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
+      
+      const ticketChannel = await guild.channels.create({
+        name: ticketChannelName,
+        type: ChannelType.GuildText,
+        parent: CATEGORY_ID || null, // Se ubica dentro de la categoría definida si existe
+        permissionOverwrites: [
+          {
+            id: guild.roles.everyone.id,
+            deny: [PermissionFlagsBits.ViewChannel], // Oculto para todos
+          },
+          {
+            id: interaction.user.id,
+            allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ReadMessageHistory], // Visible para quien reclama
+          },
+          {
+            id: client.user.id,
+            allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.ManageChannels], // Permisos del bot
+          }
+        ],
+      });
+
+      // 2. Enviar mensaje de bienvenida dentro del nuevo ticket
+      const ticketEmbed = new EmbedBuilder()
+        .setTitle(`📩 Ticket de Orden - Reclamado`)
+        .setColor(65280)
+        .setDescription(`Hola <@${interaction.user.id}>, has reclamado esta orden. Utiliza este canal para gestionar los detalles con la administración.`)
+        .addFields(originalEmbed.fields)
+        .setTimestamp();
+
+      await ticketChannel.send({ content: `<@${interaction.user.id}>`, embeds: [ticketEmbed] });
+
+      // 3. Actualizar el mensaje original de la orden en el canal principal
       const updatedEmbed = EmbedBuilder.from(originalEmbed)
-        .setColor(65280) // Cambia a verde brillante al reclamar
-        .spliceFields(5, 1, { name: "📌 Estado", value: `🟢 **Reclamado por <@${interaction.user.id}>**` });
+        .setColor(65280)
+        .spliceFields(5, 1, { name: "📌 Estado", value: `🟢 **Reclamado por <@${interaction.user.id}>** (<#${ticketChannel.id}>)` });
 
       const disabledRow = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
@@ -79,9 +127,10 @@ client.on('interactionCreate', async interaction => {
           .setDisabled(true)
       );
 
-      await interaction.update({ embeds: [updatedEmbed], components: [disabledRow] });
+      await interaction.editReply({ embeds: [updatedEmbed], components: [disabledRow] });
+
     } catch (err) {
-      console.error("Error al reclamar la orden:", err);
+      console.error("Error al reclamar la orden y crear el ticket:", err);
     }
   }
 });
