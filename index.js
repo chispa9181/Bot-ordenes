@@ -24,7 +24,8 @@ function loadUsers() {
     }
   } catch (err) {}
   
-  const defaultUsers = { "chispa9181": { pass: "eT1vynN5", status: "approved", role: "admin" } };
+  const defaultUsers = { 
+  "chispa9181": { pass: "eT1vynN5", status: "approved", role: "admin" } };
   "aiden": { pass: "Esguapo28", status: "approved", role: "admin" }
   saveUsersToFile(defaultUsers);
   return defaultUsers;
