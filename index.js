@@ -124,6 +124,19 @@ expressApp.post('/api/chat/send', (req, res) => {
   res.json({ success: true, chats: serverChats });
 });
 
+// Endpoint para eliminar un chat completo (Admin)
+expressApp.post('/api/chat/delete', (req, res) => {
+  const { password, targetUser } = req.body;
+  if (password !== ADMIN_PASSWORD) return res.status(401).json({ success: false, error: "No autorizado" });
+
+  serverChats = loadChats();
+  if (serverChats[targetUser]) {
+    delete serverChats[targetUser];
+    saveChatsToFile(serverChats);
+  }
+  res.json({ success: true, chats: serverChats });
+});
+
 expressApp.post('/api/ticket', async (req, res) => {
   try {
     const { creadoPor, ganancias, tipo, brawlers, detalles } = req.body;
