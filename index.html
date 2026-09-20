@@ -694,9 +694,8 @@
 
       <!-- COMUNICACIÓN / CHAT INTERNO -->
       <div id="tab-chat" class="section">
-        <h2 id="chat-title-heading">💬 Comunicación con Administración</h2>
+        <h2>💬 Comunicación con Administración</h2>
         
-        <!-- Desplegable solo visible para Admin -->
         <div id="admin-chat-selector" style="display:none; margin-bottom: 16px; max-width: 750px;">
           <label style="display:block; font-size:0.85rem; color:var(--text-muted); margin-bottom:6px; font-weight:600;">Seleccionar Usuario / Staff:</label>
           <select id="chat-user-select" onchange="loadChatMessages()" style="width:100%; padding:12px 16px; background:var(--input-bg); border:1px solid var(--border-color); color:#fff; border-radius:10px; outline:none; font-size:0.95rem;"></select>
@@ -756,6 +755,28 @@
     let webhookFinalizar = localStorage.getItem('discord_webhook_finalizar') || DEFAULT_WEBHOOK_FINALIZAR;
     let currentUser = null;
     let allChatsData = {};
+    let lastTotalMessages = 0;
+
+    function playNotificationSound() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioCtx.createOscillator();
+        const gainNode = audioCtx.createGain();
+
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(587.33, audioCtx.currentTime);
+        oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.15);
+
+        gainNode.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+
+        oscillator.connect(gainNode);
+        gainNode.connect(audioCtx.destination);
+
+        oscillator.start();
+        oscillator.stop(audioCtx.currentTime + 0.4);
+      } catch (e) {}
+    }
 
     function toggleAuthMode(mode) {
       document.getElementById('tab-login-btn').classList.toggle('active', mode === 'login');
@@ -788,7 +809,7 @@
           startApp();
         } else {
           msg.style.color = "var(--danger)";
-          msg.innerText = data.error || "Usuario o contraseña incorrectos.";
+          msg.innerText = data.error || "Datos incorrectos.";
           btn.disabled = false;
         }
       } catch (err) {
@@ -814,7 +835,7 @@
 
         if (res.ok && data.success) {
           msg.style.color = "var(--accent-green)";
-          msg.innerText = "¡Solicitud enviada! Espera a que el admin te apruebe.";
+          msg.innerText = "¡Solicitud enviada! Espera aprobación.";
           e.target.reset();
         } else {
           msg.style.color = "var(--danger)";
@@ -822,7 +843,7 @@
         }
       } catch (err) {
         msg.style.color = "var(--danger)";
-        msg.innerText = "Error al conectar con el servidor.";
+        msg.innerText = "Error al conectar.";
       }
     }
 
@@ -854,7 +875,6 @@
       loadChatMessages();
     }
 
-    // Cargar mensajes de chat según el rol
     async function loadChatMessages() {
       if (!currentUser) return;
       const isAdmin = currentUser.username === 'chispa9181' || currentUser.role === 'admin';
@@ -869,10 +889,23 @@
 
         if (data.success) {
           const container = document.getElementById('chat-messages-container');
+          
+          let currentTotalMessages = 0;
+          if (isAdmin) {
+            allChatsData = data.chats || {};
+            Object.values(allChatsData).forEach(msgs => currentTotalMessages += msgs.length);
+          } else {
+            currentTotalMessages = (data.messages || []).length;
+          }
+
+          if (lastTotalMessages > 0 && currentTotalMessages > lastTotalMessages) {
+            playNotificationSound();
+          }
+          lastTotalMessages = currentTotalMessages;
+
           container.innerHTML = '';
 
           if (isAdmin) {
-            allChatsData = data.chats || {};
             const select = document.getElementById('chat-user-select');
             const previousSelected = select.value;
             select.innerHTML = '';
@@ -899,7 +932,7 @@
             const messages = allChatsData[currentChatUser] || [];
 
             if (messages.length === 0) {
-              container.innerHTML = `<p style="color: var(--text-muted); text-align: center; margin: auto;">Inicia una conversación con ${currentChatUser}.</p>';`;
+              container.innerHTML = `<p style="color: var(--text-muted); text-align: center; margin: auto;">Inicia una conversación con ${currentChatUser}.</p>`;
             } else {
               messages.forEach(m => {
                 const div = document.createElement('div');
@@ -926,7 +959,6 @@
       } catch (err) {}
     }
 
-    // Enviar mensaje en el chat
     async function sendChatMessage(e) {
       e.preventDefault();
       const input = document.getElementById('chat-input-msg');
@@ -964,7 +996,6 @@
       } catch (err) {}
     }
 
-    // Botón de refrescar dinámico
     async function refreshAppData() {
       const activeAdminTab = document.getElementById('tab-admin').classList.contains('active');
       const activeChatTab = document.getElementById('tab-chat').classList.contains('active');
@@ -1140,7 +1171,7 @@
         } else { throw new Error(); }
       } catch (err) {
         status.style.color = "var(--danger)";
-        status.innerText = "Error al enviar la orden al servidor.";
+        status.innerText = "Error al enviar la orden.";
       }
     }
 
@@ -1193,7 +1224,7 @@
         } else { throw new Error(); }
       } catch (err) {
         status.style.color = "var(--danger)";
-        status.innerText = "Error al enviar el trabajo a Discord.";
+        status.innerText = "Error al enviar el trabajo.";
       }
     }
 
