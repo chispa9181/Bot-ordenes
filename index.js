@@ -127,7 +127,7 @@ expressApp.post('/api/ticket', async (req, res) => {
     historialRegistros.unshift({
       tipoAccion: "Creación de Orden",
       usuario: creadoPor || "Anónimo",
-      detalles: `Tipo: ${tipo || 'Normal'} | Ganancias: ${ganancias}€ \vert{} Brawlers:${brawlers || 'Ninguno'}`,
+      detalles: `Tipo: ${tipo || 'Normal'} | Ganancias: ${ganancias}€ | Brawlers: ${brawlers || 'Ninguno'}`,
       fecha: new Date().toLocaleString("es-ES")
     });
 
@@ -170,66 +170,13 @@ expressApp.post('/api/finalizar-trabajo', async (req, res) => {
     historialRegistros.unshift({
       tipoAccion: "Finalización de Trabajo",
       usuario: usuario || "Anónimo",
-      detalles: `Trabajo: ${trabajo} \vert{} Info:${detalles || 'Sin detalles adicionales'}`,
+      detalles: `Trabajo: ${trabajo} | Info: ${detalles || 'Sin detalles adicionales'}`,
       fecha: new Date().toLocaleString("es-ES")
     });
 
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Error al registrar finalización de trabajo" });
-  }
-});
-
-// ================= ENDPOINT: ENVIAR DUDAS =================
-expressApp.post('/api/duda', async (req, res) => {
-  try {
-    const { usuario, titulo, mensaje, webhookUrl } = req.body;
-    
-    // Webhook de respaldo por defecto si no se recibe uno específico
-    const targetWebhook = webhookUrl || "https://discord.com/api/webhooks/1545843817176109116/J6TU-V1-XiCdpFrRa-Usmx-FPokgHlEtUq1c2GQESG82pRbsoCqVJXCLXsHGh9gYNfp2";
-
-    historialRegistros.unshift({
-      tipoAccion: "Envío de Duda",
-      usuario: usuario || "Anónimo",
-      detalles: `Asunto: ${titulo}`,
-      fecha: new Date().toLocaleString("es-ES")
-    });
-
-    const payload = {
-      username: "BrawlPush Bot",
-      avatar_url: "https://i.imgur.com/4M34hi2.png",
-      embeds: [{
-        title: "💬 **NUEVA CONSULTA / DUDA**",
-        color: 3447003,
-        fields: [
-          { name: "👤 **Miembro del Staff**", value: `\`${usuario || "Anónimo"}\``, inline: true },
-          { name: "📌 **Asunto**", value: `**${titulo}**`, inline: false },
-          { name: "📝 **Mensaje / Consulta**", value: `> ${mensaje}`, inline: false }
-        ],
-        footer: {
-          text: "BrawlPush Soporte Interno",
-          icon_url: "https://i.imgur.com/4M34hi2.png"
-        },
-        timestamp: new Date().toISOString()
-      }]
-    };
-
-    const discordRes = await fetch(targetWebhook, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-
-    if (discordRes.ok) {
-      res.json({ success: true });
-    } else {
-      const errText = await discordRes.text();
-      console.error("Error de Discord al enviar duda:", errText);
-      res.status(500).json({ success: false, error: "Discord rechazó el webhook: " + errText });
-    }
-  } catch (error) {
-    console.error("Error al procesar la duda:", error);
-    res.status(500).json({ success: false, error: error.message });
   }
 });
 
