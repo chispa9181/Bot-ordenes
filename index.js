@@ -101,15 +101,18 @@ expressApp.post('/api/login', (req, res) => {
 
 // ================= ENDPOINT: GESTIÓN DE USUARIOS (ADMIN) =================
 expressApp.post('/api/users', (req, res) => {
-  const { password, action, targetUser } = req.body;
+  const { password, action, targetUser, newRole } = req.body;
   if (password !== ADMIN_PASSWORD) {
     return res.status(401).json({ success: false, error: "No autorizado" });
   }
 
-  serverUsers = loadUsers();
+  let serverUsers = loadUsers();
 
   if (action === "approve" && serverUsers[targetUser]) {
     serverUsers[targetUser].status = "approved";
+    saveUsersToFile(serverUsers);
+  } else if (action === "role" && serverUsers[targetUser] && targetUser !== "chispa9181") {
+    serverUsers[targetUser].role = newRole; // "user" (staff) o "admin"
     saveUsersToFile(serverUsers);
   } else if (action === "reject" && targetUser && targetUser !== "chispa9181") {
     delete serverUsers[targetUser];
