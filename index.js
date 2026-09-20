@@ -1,17 +1,14 @@
-const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, PermissionFlagsBits } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs');
 
-// ================= CONFIGURACIÓN DE TU BOT Y SERVIDOR DISCORD =================
 const BOT_TOKEN = process.env.BOT_TOKEN;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "eT1vynN5";
 
 const GUILD_ID = "1545761394140651605";
 const CHANNEL_ID = "1545829356310495253";
-const CATEGORY_ID = null;
 
-const historialRegistros = [];
 const USERS_FILE = './users.json';
 const CHATS_FILE = './chats.json';
 
@@ -27,17 +24,13 @@ function loadUsers() {
     }
   } catch (err) {}
   
-  const defaultUsers = {
-    "chispa9181": { pass: "eT1vynN5", status: "approved", role: "admin" }
-  };
+  const defaultUsers = { "chispa9181": { pass: "eT1vynN5", status: "approved", role: "admin" } };
   saveUsersToFile(defaultUsers);
   return defaultUsers;
 }
 
 function saveUsersToFile(users) {
-  try {
-    fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
-  } catch (err) {}
+  try { fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8'); } catch (err) {}
 }
 
 function loadChats() {
@@ -51,22 +44,13 @@ function loadChats() {
 }
 
 function saveChatsToFile(chats) {
-  try {
-    fs.writeFileSync(CHATS_FILE, JSON.stringify(chats, null, 2), 'utf8');
-  } catch (err) {}
+  try { fs.writeFileSync(CHATS_FILE, JSON.stringify(chats, null, 2), 'utf8'); } catch (err) {}
 }
 
 let serverUsers = loadUsers();
 let serverChats = loadChats();
 
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.GuildMembers
-  ]
-});
-
+const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.GuildMembers] });
 const expressApp = express();
 expressApp.use(cors());
 expressApp.use(express.json());
@@ -74,7 +58,6 @@ expressApp.use(express.json());
 expressApp.post('/api/register', (req, res) => {
   const { username, password } = req.body;
   if (!username || !password) return res.status(400).json({ success: false, error: "Faltan datos" });
-  
   serverUsers = loadUsers();
   if (serverUsers[username]) return res.status(400).json({ success: false, error: "El usuario ya existe" });
 
@@ -87,17 +70,14 @@ expressApp.post('/api/login', (req, res) => {
   const { username, password } = req.body;
   serverUsers = loadUsers();
   const user = serverUsers[username];
-
   if (!user || user.pass !== password) return res.status(401).json({ success: false, error: "Datos incorrectos" });
   if (user.status !== "approved") return res.status(403).json({ success: false, error: "Cuenta pendiente de aprobación." });
-
   res.json({ success: true, role: user.role });
 });
 
 expressApp.post('/api/users', (req, res) => {
   const { password, action, targetUser, newRole, newPassword } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ success: false, error: "No autorizado" });
-
   let serverUsers = loadUsers();
 
   if (action === "approve" && serverUsers[targetUser]) {
@@ -113,14 +93,12 @@ expressApp.post('/api/users', (req, res) => {
     delete serverUsers[targetUser];
     saveUsersToFile(serverUsers);
   }
-
   res.json({ success: true, users: serverUsers });
 });
 
 expressApp.post('/api/chat/get', (req, res) => {
   const { username, isAdmin } = req.body;
   serverChats = loadChats();
-
   if (isAdmin) {
     res.json({ success: true, chats: serverChats });
   } else {
@@ -134,7 +112,6 @@ expressApp.post('/api/chat/send', (req, res) => {
 
   serverChats = loadChats();
   const chatKey = isAdmin ? recipient : sender;
-
   if (!serverChats[chatKey]) serverChats[chatKey] = [];
 
   serverChats[chatKey].push({
