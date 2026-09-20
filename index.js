@@ -18,7 +18,7 @@ const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "eT1vynN5";
 const GUILD_ID = "1545761394140651605";
 const CHANNEL_ID = "1545829356310495253";
 // Opcional: Si tienes una categoría para los tickets, coloca su ID aquí entre comillas (ej: "123456789012345678").
-const CATEGORY_ID = null; 
+const CATEGORY_ID = "1545829163821436970"; 
 
 const USERS_FILE = './users.json';
 const CHATS_FILE = './chats.json';
