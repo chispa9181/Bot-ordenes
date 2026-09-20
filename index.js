@@ -13,6 +13,7 @@ const CATEGORY_ID = null;
 
 const historialRegistros = [];
 const USERS_FILE = './users.json';
+const CHATS_FILE = './chats.json';
 
 // Cargar usuarios de forma segura y persistente
 function loadUsers() {
@@ -44,7 +45,29 @@ function saveUsersToFile(users) {
   }
 }
 
+// Cargar chats de forma persistente
+function loadChats() {
+  try {
+    if (fs.existsSync(CHATS_FILE)) {
+      const data = fs.readFileSync(CHATS_FILE, 'utf8');
+      return JSON.parse(data);
+    }
+  } catch (err) {
+    console.error("Error al leer chats.json:", err);
+  }
+  return {};
+}
+
+function saveChatsToFile(chats) {
+  try {
+    fs.writeFileSync(CHATS_FILE, JSON.stringify(chats, null, 2), 'utf8');
+  } catch (err) {
+    console.error("Error al guardar chats.json:", err);
+  }
+}
+
 let serverUsers = loadUsers();
+let serverChats = loadChats();
 
 const client = new Client({
   intents: [
@@ -112,10 +135,10 @@ expressApp.post('/api/users', (req, res) => {
     serverUsers[targetUser].status = "approved";
     saveUsersToFile(serverUsers);
   } else if (action === "role" && serverUsers[targetUser] && targetUser !== "chispa9181") {
-    serverUsers[targetUser].role = newRole; // "user" (staff) o "admin"
+    serverUsers[targetUser].role = newRole;
     saveUsersToFile(serverUsers);
   } else if (action === "password" && serverUsers[targetUser] && targetUser !== "chispa9181") {
-    serverUsers[targetUser].pass = newPassword; // Cambiar contraseña
+    serverUsers[targetUser].pass = newPassword;
     saveUsersToFile(serverUsers);
   } else if (action === "reject" && targetUser && targetUser !== "chispa9181") {
     delete serverUsers[targetUser];
@@ -123,6 +146,46 @@ expressApp.post('/api/users', (req, res) => {
   }
 
   res.json({ success: true, users: serverUsers });
+});
+
+// ================= ENDPOINT: OBTENER MENSAJES DE CHAT =================
+expressApp.post('/api/chat/get', (req, res) => {
+  const { username, isAdmin } = req.body;
+  serverChats = loadChats();
+
+  if (isAdmin) {
+    // El admin recibe todos los chats disponibles
+    res.json({ success: true, chats: serverChats });
+  } else {
+    // El usuario normal solo recibe su propio chat con el admin
+    const userChat = serverChats[username] || [];
+    res.json({ success: true, messages: userChat });
+  }
+});
+
+// ================= ENDPOINT: ENVIAR MENSAJE DE CHAT =================
+expressApp.post('/api/chat/send', (req, res) => {
+  const { sender, recipient, message, isAdmin } = req.body;
+  if (!sender || !message) {
+    return res.status(400).json({ success: false, error: "Faltan datos" });
+  }
+
+  serverChats = loadChats();
+  // Definimos la clave del chat según quién hable con quién
+  const chatKey = isAdmin ? recipient : sender;
+
+  if (!serverChats[chatKey]) {
+    serverChats[chatKey] = [];
+  }
+
+  serverChats[chatKey].push({
+    sender,
+    message,
+    time: new Date().toLocaleTimeString("es-ES", { hour: '2-digit', minute: '2-digit' })
+  });
+
+  saveChatsToFile(serverChats);
+  res.json({ success: true, chats: serverChats });
 });
 
 // ================= ENDPOINT: CREAR ÓRDENES =================
@@ -167,105 +230,6 @@ expressApp.post('/api/ticket', async (req, res) => {
     res.status(500).json({ error: "Error al enviar la orden a Discord" });
   }
 });
-
-// ================= ENDPOINT: FINALIZACIÓN DE TRABAJOS =================
-expressApp.post('/api/finalizar-trabajo', async (req, res) => {
-  try {
-    const { usuario, trabajo, detalles } = req.body;
-
-    historialRegistros.unshift({
-      tipoAccion: "Finalización de Trabajo",
-      usuario: usuario || "Anónimo",
-      detalles: `Trabajo: ${trabajo} | Info: ${detalles || 'Sin detalles adicionales'}`,
-      fecha: new Date().toLocaleString("es-ES")
-    });
-
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: "Error al registrar finalización de trabajo" });
-  }
-});
-
-// ================= ENDPOINT: OBTENER REGISTROS PARA MODO ADMIN =================
-expressApp.post('/api/registros', (req, res) => {
-  const { password } = req.body;
-
-  if (password && password !== ADMIN_PASSWORD) {
-    return res.status(401).json({ success: false, error: "Contraseña incorrecta" });
-  }
-
-  res.json({ success: true, registros: historialRegistros });
-});
-
-// ================= INTERACCIONES: BOTONES DISCORD =================
-client.on('interactionCreate', async (interaction) => {
-  if (!interaction.isButton()) return;
-
-  if (interaction.customId === 'claim_order_btn') {
-    const guild = interaction.guild;
-    const user = interaction.user;
-    const originalEmbed = interaction.message.embeds[0];
-
-    const updatedEmbed = EmbedBuilder.from(originalEmbed)
-      .setColor(5763719)
-      .setFields(
-        { name: "👤 Creado por", value: originalEmbed.fields[0].value, inline: true },
-        { name: "💰 Ganancias", value: originalEmbed.fields[1].value, inline: true },
-        { name: "📦 Tipo de orden", value: originalEmbed.fields[2].value, inline: true },
-        { name: "⚡ Brawlers a Fuerza 11", value: originalEmbed.fields[3].value },
-        { name: "📝 Detalles de la orden", value: originalEmbed.fields[4].value },
-        { name: "✅ Atendido por", value: `<@${user.id}> (${user.username})` }
-      );
-
-    const disabledRow = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('claimed_done')
-        .setLabel('Reclamado')
-        .setStyle(ButtonStyle.Secondary)
-        .setDisabled(true)
-    );
-
-    await interaction.message.edit({ embeds: [updatedEmbed], components: [disabledRow] });
-
-    const ticketChannel = await guild.channels.create({
-      name: `orden-${user.username}`,
-      type: ChannelType.GuildText,
-      parent: CATEGORY_ID || null,
-      permissionOverwrites: [
-        { id: guild.id, deny: [PermissionFlagsBits.ViewChannel] },
-        { id: user.id, allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages, PermissionFlagsBits.AttachFiles] }
-      ]
-    });
-
-    const ticketEmbed = new EmbedBuilder()
-      .setTitle("🎟️ Ticket de Orden Iniciado")
-      .setDescription(`¡Hola <@${user.id}>! Un administrador te atenderá lo antes posible.`)
-      .setColor(3840952)
-      .setFooter({ text: "Sistema de Soporte de Órdenes" })
-      .setTimestamp();
-
-    const closeRow = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('close_ticket_btn')
-        .setLabel('🔒 Cerrar Ticket')
-        .setStyle(ButtonStyle.Danger)
-    );
-
-    await ticketChannel.send({ content: `<@${user.id}>`, embeds: [ticketEmbed], components: [closeRow] });
-    await interaction.reply({ content: `¡Orden reclamada con éxito! Ve al canal <#${ticketChannel.id}>`, ephemeral: true });
-  }
-
-  if (interaction.customId === 'close_ticket_btn') {
-    await interaction.reply({ content: '🔒 Este ticket se cerrará en **5 segundos**...' });
-    setTimeout(async () => {
-      try {
-        await interaction.channel.delete();
-      } catch (err) {}
-    }, 5000);
-  }
-});
-
-client.login(BOT_TOKEN);
 
 expressApp.listen(3000, () => {
   console.log('🤖 Servidor del Bot encendido y listo en el puerto 3000');
