@@ -37,7 +37,6 @@
                         radial-gradient(circle at 90% 80%, rgba(14, 165, 233, 0.03) 0%, transparent 40%);
     }
 
-    /* PANTALLA DE AUTENTICACIÓN */
     #auth-screen {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -125,7 +124,6 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
 
-    /* BARRA LATERAL (SIDEBAR) */
     #app-container {
       display: none;
       width: 100%;
@@ -173,24 +171,9 @@
       box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
     }
 
-    .brand-info {
-      display: flex;
-      flex-direction: column;
-    }
-
-    .brand-title {
-      font-size: 1.1rem;
-      font-weight: 900;
-      letter-spacing: 0.5px;
-      color: #fff;
-    }
-
-    .brand-subtitle {
-      font-size: 0.65rem;
-      color: var(--accent-gold);
-      font-weight: 700;
-      letter-spacing: 1.5px;
-    }
+    .brand-info { display: flex; flex-direction: column; }
+    .brand-title { font-size: 1.1rem; font-weight: 900; letter-spacing: 0.5px; color: #fff; }
+    .brand-subtitle { font-size: 0.65rem; color: var(--accent-gold); font-weight: 700; letter-spacing: 1.5px; }
 
     .menu-group {
       display: flex;
@@ -229,7 +212,6 @@
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
 
-    /* ZONA INFERIOR SIDEBAR */
     .sidebar-bottom {
       display: flex;
       flex-direction: column;
@@ -257,9 +239,7 @@
       transition: all 0.2s;
     }
 
-    .admin-dropdown-btn:hover {
-      background: #273548;
-    }
+    .admin-dropdown-btn:hover { background: #273548; }
 
     .admin-dropdown-menu {
       display: none;
@@ -333,11 +313,8 @@
       margin-top: 3px;
       text-align: left;
       font-weight: 600;
-      transition: opacity 0.2s;
     }
-    .btn-logout:hover { opacity: 0.8; }
 
-    /* CONTENIDO PRINCIPAL */
     .main-content {
       flex: 1;
       padding: 40px 50px;
@@ -372,23 +349,12 @@
       overflow: hidden;
     }
 
-    .action-card::after {
-      content: '';
-      position: absolute;
-      bottom: 0; left: 0; width: 100%; height: 3px;
-      background: var(--accent-gold);
-      opacity: 0;
-      transition: opacity 0.25s;
-    }
-
     .action-card:hover {
       transform: translateY(-4px);
       border-color: rgba(245, 158, 11, 0.4);
       background-color: var(--card-hover);
-      box-shadow: 0 15px 30px -10px rgba(0,0,0,0.6);
     }
 
-    .action-card:hover::after { opacity: 1; }
     .action-card h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; color: #fff; }
 
     .form-container {
@@ -414,18 +380,10 @@
       color: #fff;
       outline: none;
       font-size: 0.95rem;
-      transition: all 0.2s;
     }
 
     .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
       border-color: var(--accent-gold);
-      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
-    }
-
-    input[type="file"] {
-      padding: 10px;
-      cursor: pointer;
-      color: var(--text-muted);
     }
 
     .btn {
@@ -437,18 +395,14 @@
       font-size: 1rem;
       cursor: pointer;
       transition: all 0.2s;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
 
     .btn-primary { background: linear-gradient(135deg, var(--accent-green), #059669); color: #fff; }
-    .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
-
     .btn-blue { background: linear-gradient(135deg, var(--accent-blue), #0284c7); color: #fff; }
-    .btn-blue:hover { filter: brightness(1.1); transform: translateY(-1px); }
-
-    .btn-danger { background-color: var(--danger); color: #fff; padding: 6px 12px; font-size: 0.8rem; margin-left: 4px; border-radius: 6px; width: auto; }
-    .btn-success { background-color: var(--accent-green); color: #fff; padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; width: auto; }
-    .btn-role { background-color: #8b5cf6; color: #fff; padding: 6px 12px; font-size: 0.8rem; margin-left: 4px; border-radius: 6px; width: auto; }
+    .btn-danger { background-color: var(--danger); color: #fff; padding: 6px 10px; font-size: 0.75rem; margin: 2px; border-radius: 6px; width: auto; }
+    .btn-success { background-color: var(--accent-green); color: #fff; padding: 6px 10px; font-size: 0.75rem; margin: 2px; border-radius: 6px; width: auto; }
+    .btn-role { background-color: #8b5cf6; color: #fff; padding: 6px 10px; font-size: 0.75rem; margin: 2px; border-radius: 6px; width: auto; }
+    .btn-pass { background-color: #f59e0b; color: #000; padding: 6px 10px; font-size: 0.75rem; font-weight: 700; margin: 2px; border-radius: 6px; width: auto; }
 
     .status-msg { margin-top: 14px; font-size: 0.9rem; text-align: center; font-weight: 600; }
 
@@ -528,7 +482,6 @@
         </div>
       </div>
 
-      <!-- ZONA INFERIOR SIDEBAR -->
       <div class="sidebar-bottom">
         <div class="admin-dropdown-container" id="admin-dropdown-wrapper">
           <div class="admin-dropdown-menu" id="admin-menu-dropdown">
@@ -849,6 +802,7 @@
               <td><span style="color:${data.users[u].status === 'approved' ? 'var(--accent-green)' : 'var(--danger)'}">${data.users[u].status === 'approved' ? 'Aprobado' : 'Pendiente'}</span></td>
               <td>
                 ${data.users[u].status === 'pending' ? `<button onclick="approveUser('${u}')" class="btn btn-success">Aprobar</button>` : ''}
+                <button onclick="changeUserPassword('${u}')" class="btn btn-pass">Cambiar Pass</button>
                 <button onclick="toggleUserRole('${u}', '${userRole}')" class="btn btn-role">${userRole === 'admin' ? 'Hacer Staff' : 'Hacer Admin'}</button>
                 <button onclick="rejectUser('${u}')" class="btn btn-danger">Eliminar</button>
               </td>
@@ -866,6 +820,24 @@
         body: JSON.stringify({ password: "eT1vynN5", action: "approve", targetUser: username })
       });
       renderAdminUsers();
+    }
+
+    async function changeUserPassword(username) {
+      const newPassword = prompt(`Introduce la nueva contraseña para el usuario "${username}":`);
+      if (!newPassword || newPassword.trim() === "") return;
+
+      const res = await fetch('https://bot-ordenes.onrender.com/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: "eT1vynN5", action: "password", targetUser: username, newPassword: newPassword.trim() })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("¡Contraseña cambiada con éxito!");
+        renderAdminUsers();
+      } else {
+        alert("Error al cambiar la contraseña.");
+      }
     }
 
     async function toggleUserRole(username, currentRole) {
