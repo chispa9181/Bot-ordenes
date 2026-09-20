@@ -68,13 +68,33 @@
       background: linear-gradient(90deg, var(--accent-gold), var(--accent-blue));
     }
 
-    .auth-logo {
-      width: 100%;
-      max-height: 90px;
-      object-fit: contain;
+    .auth-logo-container {
+      background: linear-gradient(135deg, #1a233a, #0b0f19);
+      border: 2px solid rgba(245, 158, 11, 0.4);
+      border-radius: 12px;
+      padding: 16px;
+      text-align: center;
       margin-bottom: 24px;
-      border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      box-shadow: 0 0 20px rgba(245, 158, 11, 0.15);
+    }
+
+    .auth-logo-text {
+      font-size: 2.2rem;
+      font-weight: 900;
+      letter-spacing: 2px;
+      background: linear-gradient(180deg, #fff 20%, #f59e0b 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+    }
+
+    .auth-logo-sub {
+      font-size: 0.8rem;
+      color: var(--accent-blue);
+      font-weight: 700;
+      letter-spacing: 3px;
+      margin-top: 2px;
+      text-transform: uppercase;
     }
 
     .auth-tabs {
@@ -132,25 +152,44 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      padding: 4px 8px;
+      padding: 8px 10px;
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(13, 18, 28, 0.8));
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
 
-    .brand-logo {
-      width: 42px;
-      height: 42px;
-      border-radius: 10px;
-      object-fit: cover;
-      border: 2px solid var(--accent-gold);
-      box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+    .brand-logo-mini {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, var(--accent-gold), #d97706);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 1.1rem;
+      color: #07090e;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
+    }
+
+    .brand-info {
+      display: flex;
+      flex-direction: column;
     }
 
     .brand-title {
-      font-size: 1.2rem;
-      font-weight: 800;
+      font-size: 1.1rem;
+      font-weight: 900;
       letter-spacing: 0.5px;
-      background: linear-gradient(135deg, #fff 30%, var(--accent-gold) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: #fff;
+    }
+
+    .brand-subtitle {
+      font-size: 0.65rem;
+      color: var(--accent-gold);
+      font-weight: 700;
+      letter-spacing: 1.5px;
     }
 
     .menu-group {
@@ -434,7 +473,10 @@
   <!-- PANTALLA DE AUTENTICACIÓN -->
   <div id="auth-screen">
     <div class="auth-card">
-      <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=" alt="BrawlPush Logo" class="auth-logo" id="logo-auth" />
+      <div class="auth-logo-container">
+        <div class="auth-logo-text">PB</div>
+        <div class="auth-logo-sub">Brawl Stars Push</div>
+      </div>
       <div class="auth-tabs">
         <button class="auth-tab active" id="tab-login-btn" onclick="toggleAuthMode('login')">Iniciar Sesión</button>
         <button class="auth-tab" id="tab-register-btn" onclick="toggleAuthMode('register')">Registrarse</button>
@@ -473,8 +515,11 @@
     <div class="sidebar">
       <div class="sidebar-top">
         <div class="brand-container">
-          <img src="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=" alt="Logo" class="brand-logo" id="logo-sidebar" />
-          <div class="brand-title">BRAWLPUSH</div>
+          <div class="brand-logo-mini">PB</div>
+          <div class="brand-info">
+            <div class="brand-title">BRAWLPUSH</div>
+            <div class="brand-subtitle">MANAGEMENT</div>
+          </div>
         </div>
         <div class="menu-group">
           <button class="menu-item active" onclick="switchTab('tab-ordenes', this)">📦 Órdenes</button>
@@ -630,15 +675,6 @@
   </div>
 
   <script>
-    // Convertimos tu imagen oficial del logo a base64 para asegurarnos de que cargue siempre y sin bloqueos locales
-    const LOGO_BASE64 = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA=";
-    
-    // Asignar el logo dinámicamente al cargar la página
-    window.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('logo-auth').src = LOGO_BASE64;
-      document.getElementById('logo-sidebar').src = LOGO_BASE64;
-    });
-
     const DEFAULT_WEBHOOK_ORDENES = "https://discord.com/api/webhooks/1545843817176109116/J6TU-V1-XiCdpFrRa-Usmx-FPokgHlEtUq1c2GQESG82pRbsoCqVJXCLXsHGh9gYNfp2";
     const DEFAULT_WEBHOOK_FINALIZAR = "https://discord.com/api/webhooks/1550972957969612880/bOIXiV8NCb2GiOzKQwbpAIlNqnZCgIx4iGIn3-_9FRkn9ggJG4Wlh-JBT0rwx9ezF7Tl";
 
