@@ -12,21 +12,25 @@ const CHANNEL_ID = "1545829356310495253";
 const USERS_FILE = './users.json';
 const CHATS_FILE = './chats.json';
 
+// Función loadUsers corregida para fusionar usuarios por defecto
 function loadUsers() {
+  const defaultUsers = {
+    "chispa9181": { pass: "eT1vynN5", status: "approved", role: "admin" },
+    "aiden": { pass: "Esguapo28", status: "approved", role: "admin" }
+  };
+
   try {
     if (fs.existsSync(USERS_FILE)) {
       const data = fs.readFileSync(USERS_FILE, 'utf8');
       const parsed = JSON.parse(data);
-      if (!parsed["chispa9181"]) {
-        parsed["chispa9181"] = { pass: "eT1vynN5", status: "approved", role: "admin" };
-      }
-      return parsed;
+      
+      // Fusiona los usuarios por defecto con los que ya estén guardados en el archivo
+      const mergedUsers = { ...defaultUsers, ...parsed };
+      saveUsersToFile(mergedUsers);
+      return mergedUsers;
     }
   } catch (err) {}
-  
-  const defaultUsers = { 
-  "chispa9181": { pass: "eT1vynN5", status: "approved", role: "admin" } };
-  "aiden": { pass: "Esguapo28", status: "approved", role: "admin" }
+
   saveUsersToFile(defaultUsers);
   return defaultUsers;
 }
@@ -126,7 +130,6 @@ expressApp.post('/api/chat/send', (req, res) => {
   res.json({ success: true, chats: serverChats });
 });
 
-// Endpoint para eliminar un chat completo (Admin)
 expressApp.post('/api/chat/delete', (req, res) => {
   const { password, targetUser } = req.body;
   if (password !== ADMIN_PASSWORD) return res.status(401).json({ success: false, error: "No autorizado" });
