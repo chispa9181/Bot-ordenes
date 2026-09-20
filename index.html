@@ -149,12 +149,18 @@
     .brand-container {
       display: flex;
       align-items: center;
-      gap: 12px;
+      justify-content: space-between;
       padding: 8px 10px;
       background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(13, 18, 28, 0.8));
       border: 1px solid rgba(245, 158, 11, 0.3);
       border-radius: 12px;
       box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .brand-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
     .brand-logo-mini {
@@ -174,6 +180,26 @@
     .brand-info { display: flex; flex-direction: column; }
     .brand-title { font-size: 1.1rem; font-weight: 900; letter-spacing: 0.5px; color: #fff; }
     .brand-subtitle { font-size: 0.65rem; color: var(--accent-gold); font-weight: 700; letter-spacing: 1.5px; }
+
+    .btn-refresh {
+      background: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--accent-gold);
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      transition: all 0.2s;
+    }
+    .btn-refresh:hover {
+      background: var(--card-bg);
+      border-color: var(--accent-gold);
+      transform: rotate(180deg);
+    }
 
     .menu-group {
       display: flex;
@@ -469,11 +495,14 @@
     <div class="sidebar">
       <div class="sidebar-top">
         <div class="brand-container">
-          <div class="brand-logo-mini">PB</div>
-          <div class="brand-info">
-            <div class="brand-title">BRAWLPUSH</div>
-            <div class="brand-subtitle">MANAGEMENT</div>
+          <div class="brand-left">
+            <div class="brand-logo-mini">PB</div>
+            <div class="brand-info">
+              <div class="brand-title">BRAWLPUSH</div>
+              <div class="brand-subtitle">MANAGEMENT</div>
+            </div>
           </div>
+          <button class="btn-refresh" onclick="refreshAppData()" title="Actualizar datos">🔄</button>
         </div>
         <div class="menu-group">
           <button class="menu-item active" onclick="switchTab('tab-ordenes', this)">📦 Órdenes</button>
@@ -726,6 +755,18 @@
 
       document.getElementById('webhook-dudas-input').value = webhookDudas;
       document.getElementById('webhook-finalizar-input').value = webhookFinalizar;
+    }
+
+    // Botón de refrescar dinámico (sin recargar la página ni cerrar sesión)
+    async function refreshAppData() {
+      const activeAdminTab = document.getElementById('tab-admin').classList.contains('active');
+      if (activeAdminTab && (currentUser.username === 'chispa9181' || currentUser.role === 'admin')) {
+        await renderAdminUsers();
+      }
+      // Animación sutil de confirmación visual
+      const btnRef = document.querySelector('.btn-refresh');
+      btnRef.style.transform = 'rotate(360deg)';
+      setTimeout(() => { btnRef.style.transform = 'rotate(0deg)'; }, 300);
     }
 
     function toggleAdminDropdown() {
