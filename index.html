@@ -124,6 +124,60 @@
       color: #fff;
     }
 
+    .admin-dropdown-container {
+      position: relative;
+      margin-top: 10px;
+      display: none;
+    }
+
+    .admin-dropdown-btn {
+      width: 100%;
+      background: #1e293b;
+      border: 1px solid var(--accent-blue);
+      color: #fff;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .admin-dropdown-menu {
+      display: none;
+      position: absolute;
+      bottom: 100%;
+      left: 0;
+      width: 100%;
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      margin-bottom: 6px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10;
+    }
+
+    .admin-dropdown-menu.show { display: block; }
+
+    .admin-dropdown-item {
+      padding: 12px 16px;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.9rem;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+      transition: background 0.2s;
+    }
+
+    .admin-dropdown-item:hover, .admin-dropdown-item.active {
+      background: var(--border-color);
+      color: #fff;
+    }
+
     .user-card {
       background-color: var(--card-bg);
       border: 1px solid var(--border-color);
@@ -224,6 +278,7 @@
     .btn-blue { background-color: var(--accent-blue); color: #fff; }
     .btn-danger { background-color: var(--danger); color: #fff; padding: 6px 12px; font-size: 0.8rem; margin-left: 4px; }
     .btn-success { background-color: var(--accent-green); color: #fff; padding: 6px 12px; font-size: 0.8rem; }
+    .btn-role { background-color: #8b5cf6; color: #fff; padding: 6px 12px; font-size: 0.8rem; margin-left: 4px; }
 
     .status-msg { margin-top: 10px; font-size: 0.85rem; text-align: center; }
 
@@ -281,6 +336,7 @@
 
   <!-- INTERFAZ PRINCIPAL -->
   <div id="app-container">
+    
     <div class="sidebar">
       <div>
         <div class="brand">BRAWLPUSH</div>
@@ -291,10 +347,22 @@
         </div>
       </div>
 
-      <div class="user-card">
+      <!-- BOTÓN DE ACCIONES DESPLEGABLE SOLO PARA ADMINISTRADORES -->
+      <div class="admin-dropdown-container" id="admin-dropdown-wrapper">
+        <div class="admin-dropdown-menu" id="admin-menu-dropdown">
+          <button class="admin-dropdown-item active" id="opt-staff" onclick="setAdminView('staff')">👤 Vista Staff</button>
+          <button class="admin-dropdown-item" id="opt-admin" onclick="setAdminView('admin')">👑 Vista Administrador</button>
+        </div>
+        <button class="admin-dropdown-btn" onclick="toggleAdminDropdown()">
+          <span id="current-view-label">⚙️ Acciones: Staff</span>
+          <span>▼</span>
+        </button>
+      </div>
+
+      <div class="user-card" style="margin-top: 15px;">
         <div class="avatar" id="user-avatar">U</div>
         <div class="user-info">
-          <span class="user-label">Usuario actual</span>
+          <span class="user-label" id="user-role-label">STAFF</span>
           <span class="user-name" id="user-display">Usuario</span>
           <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
         </div>
@@ -302,6 +370,7 @@
     </div>
 
     <div class="main-content">
+
       <!-- ÓRDENES -->
       <div id="tab-ordenes" class="section active">
         <h2>Gestión de Órdenes</h2>
@@ -391,6 +460,7 @@
       <!-- PANEL ADMIN -->
       <div id="tab-admin" class="section">
         <h2>Panel de Administrador</h2>
+
         <div class="form-container" style="max-width: 100%; margin-bottom: 30px;">
           <h3>👥 Solicitudes de Usuario y Aprobación</h3>
           <table class="user-table">
@@ -398,11 +468,13 @@
               <tr>
                 <th>Usuario</th>
                 <th>Contraseña</th>
+                <th>Rango</th>
                 <th>Estado</th>
                 <th>Acciones</th>
               </tr>
             </thead>
-            <tbody id="user-list-body"></tbody>
+            <tbody id="user-list-body">
+            </tbody>
           </table>
         </div>
 
@@ -418,6 +490,7 @@
           <button onclick="saveWebhookFinalizar()" class="btn btn-primary" style="margin-top:10px; width:auto; padding:8px 16px;">Guardar Webhook Finalizar Trabajo</button>
         </div>
       </div>
+
     </div>
   </div>
 
@@ -505,14 +578,51 @@
       document.getElementById('user-avatar').innerText = currentUser.username.charAt(0).toUpperCase();
       document.getElementById('fin-solicitante').value = currentUser.username;
 
+      // Mostrar etiqueta correcta en el perfil inferior
+      const roleLabel = document.getElementById('user-role-label');
       if (currentUser.role === 'admin') {
-        document.getElementById('admin-menu-btn').style.display = 'flex';
-        renderAdminUsers();
+        roleLabel.innerText = "ADMINISTRADOR";
+        roleLabel.style.color = "var(--accent-green)";
+        document.getElementById('admin-dropdown-wrapper').style.display = 'block';
+        setAdminView('staff');
       } else {
-        document.getElementById('admin-menu-btn').style.display = 'none';
+        roleLabel.innerText = "STAFF";
+        roleLabel.style.color = "var(--text-muted)";
+        document.getElementById('admin-dropdown-wrapper').style.display = 'none';
       }
+
       document.getElementById('webhook-dudas-input').value = webhookDudas;
       document.getElementById('webhook-finalizar-input').value = webhookFinalizar;
+    }
+
+    function toggleAdminDropdown() {
+      const menu = document.getElementById('admin-menu-dropdown');
+      menu.classList.toggle('show');
+    }
+
+    function setAdminView(viewType) {
+      const optStaff = document.getElementById('opt-staff');
+      const optAdmin = document.getElementById('opt-admin');
+      const label = document.getElementById('current-view-label');
+      const adminMenuBtn = document.getElementById('admin-menu-btn');
+
+      optStaff.classList.remove('active');
+      optAdmin.classList.remove('active');
+
+      if (viewType === 'staff') {
+        optStaff.classList.add('active');
+        label.innerText = "⚙️ Acciones: Staff";
+        adminMenuBtn.style.display = 'none';
+        switchTab('tab-ordenes', document.querySelector('.menu-item'));
+      } else {
+        optAdmin.classList.add('active');
+        label.innerText = "👑 Acciones: Admin";
+        adminMenuBtn.style.display = 'flex';
+        switchTab('tab-admin', adminMenuBtn);
+        renderAdminUsers();
+      }
+
+      document.getElementById('admin-menu-dropdown').classList.remove('show');
     }
 
     function logout() {
@@ -527,7 +637,7 @@
       document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
       document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
       document.getElementById(tabId).classList.add('active');
-      btn.classList.add('active');
+      if (btn) btn.classList.add('active');
     }
 
     function showForm(formId) {
@@ -550,14 +660,17 @@
 
           Object.keys(data.users).forEach(u => {
             if (u === 'chispa9181') return;
+            const userRole = data.users[u].role || 'user';
             const tr = document.createElement('tr');
             tr.innerHTML = `
               <td>${u}</td>
               <td><code>${data.users[u].pass}</code></td>
+              <td><span style="color:${userRole === 'admin' ? 'var(--accent-green)' : 'var(--text-muted)'}">${userRole === 'admin' ? 'Administrador' : 'Staff'}</span></td>
               <td><span style="color:${data.users[u].status === 'approved' ? 'var(--accent-green)' : 'var(--danger)'}">${data.users[u].status === 'approved' ? 'Aprobado' : 'Pendiente'}</span></td>
               <td>
                 ${data.users[u].status === 'pending' ? `<button onclick="approveUser('${u}')" class="btn btn-success">Aprobar</button>` : ''}
-                <button onclick="rejectUser('${u}')" class="btn btn-danger">${data.users[u].status === 'pending' ? 'Rechazar' : 'Eliminar'}</button>
+                <button onclick="toggleUserRole('${u}', '${userRole}')" class="btn btn-role">${userRole === 'admin' ? 'Hacer Staff' : 'Hacer Admin'}</button>
+                <button onclick="rejectUser('${u}')" class="btn btn-danger">Eliminar</button>
               </td>
             `;
             tbody.appendChild(tr);
@@ -571,6 +684,16 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password: "eT1vynN5", action: "approve", targetUser: username })
+      });
+      renderAdminUsers();
+    }
+
+    async function toggleUserRole(username, currentRole) {
+      const newRole = currentRole === 'admin' ? 'user' : 'admin';
+      await fetch('https://bot-ordenes.onrender.com/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: "eT1vynN5", action: "role", targetUser: username, newRole })
       });
       renderAdminUsers();
     }
