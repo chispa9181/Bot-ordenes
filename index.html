@@ -6,19 +6,23 @@
   <title>Panel de Gestión - BrawlPush</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg-dark: #0b0e14;
-      --sidebar-bg: #121824;
-      --card-bg: #1a2232;
-      --input-bg: #0f141f;
-      --border-color: #26334d;
-      --accent-blue: #0070f3;
+      --bg-dark: #07090e;
+      --sidebar-bg: #0d121c;
+      --card-bg: #131b2c;
+      --card-hover: #19233b;
+      --input-bg: #090d16;
+      --border-color: #1e293b;
+      --border-focus: #f59e0b;
+      --accent-blue: #0ea5e9;
+      --accent-gold: #f59e0b;
       --accent-green: #10b981;
-      --text-main: #f3f4f6;
-      --text-muted: #9ca3af;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
       --danger: #ef4444;
+      --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -29,8 +33,11 @@
       display: flex;
       height: 100vh;
       overflow: hidden;
+      background-image: radial-gradient(circle at 10% 20%, rgba(245, 158, 11, 0.03) 0%, transparent 40%),
+                        radial-gradient(circle at 90% 80%, rgba(14, 165, 233, 0.03) 0%, transparent 40%);
     }
 
+    /* PANTALLA DE AUTENTICACIÓN */
     #auth-screen {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -39,21 +46,44 @@
       align-items: center;
       justify-content: center;
       z-index: 999;
+      background-image: radial-gradient(circle at center, rgba(245, 158, 11, 0.05) 0%, var(--bg-dark) 70%);
     }
 
     .auth-card {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 32px;
+      border-radius: 16px;
+      padding: 40px 32px;
       width: 100%;
-      max-width: 400px;
+      max-width: 420px;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .auth-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; width: 100%; height: 4px;
+      background: linear-gradient(90deg, var(--accent-gold), var(--accent-blue));
+    }
+
+    .auth-logo {
+      width: 100%;
+      max-height: 85px;
+      object-fit: contain;
+      margin-bottom: 24px;
+      border-radius: 8px;
     }
 
     .auth-tabs {
       display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 8px;
+      margin-bottom: 24px;
+      background: var(--input-bg);
+      padding: 4px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
     }
 
     .auth-tab {
@@ -64,14 +94,17 @@
       color: var(--text-muted);
       font-weight: 600;
       cursor: pointer;
-      border-bottom: 2px solid transparent;
+      border-radius: 8px;
+      transition: all 0.25s ease;
     }
 
     .auth-tab.active {
-      color: #fff;
-      border-color: var(--accent-blue);
+      background: var(--card-bg);
+      color: var(--accent-gold);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
 
+    /* BARRA LATERAL (SIDEBAR) */
     #app-container {
       display: none;
       width: 100%;
@@ -91,46 +124,72 @@
     .sidebar-top {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 16px;
     }
 
-    .brand {
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: #fff;
-      margin-bottom: 20px;
-      padding-left: 10px;
+    .brand-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 8px;
+    }
+
+    .brand-logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      object-fit: cover;
+      border: 2px solid var(--accent-gold);
+      box-shadow: 0 0 12px rgba(245, 158, 11, 0.3);
+    }
+
+    .brand-title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      background: linear-gradient(135deg, #fff 30%, var(--accent-gold) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     .menu-group {
       display: flex;
       flex-direction: column;
-      gap: 10px;
+      gap: 8px;
+      margin-top: 10px;
     }
 
     .menu-item {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 14px;
       padding: 14px 16px;
-      border-radius: 8px;
+      border-radius: 10px;
       color: var(--text-muted);
       cursor: pointer;
-      font-weight: 500;
+      font-weight: 600;
       font-size: 0.95rem;
-      transition: all 0.2s ease;
+      transition: all 0.25s ease;
       background: transparent;
-      border: none;
+      border: 1px solid transparent;
       width: 100%;
       text-align: left;
     }
 
-    .menu-item:hover, .menu-item.active {
+    .menu-item:hover {
       background-color: var(--card-bg);
-      color: #fff;
+      color: var(--text-main);
+      transform: translateX(3px);
     }
 
-    /* Contenedor inferior de la barra lateral (Acciones y Perfil) */
+    .menu-item.active {
+      background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(19, 27, 44, 0.8));
+      color: var(--accent-gold);
+      border-color: rgba(245, 158, 11, 0.3);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    /* ZONA INFERIOR SIDEBAR */
     .sidebar-bottom {
       display: flex;
       flex-direction: column;
@@ -144,16 +203,22 @@
 
     .admin-dropdown-btn {
       width: 100%;
-      background: #1a2232;
-      border: 1px solid var(--accent-blue);
-      color: #fff;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 1px solid var(--accent-gold);
+      color: var(--accent-gold);
       padding: 12px 16px;
-      border-radius: 8px;
-      font-weight: 600;
+      border-radius: 10px;
+      font-weight: 700;
       cursor: pointer;
       display: flex;
       justify-content: space-between;
       align-items: center;
+      box-shadow: 0 4px 12px rgba(245, 158, 11, 0.1);
+      transition: all 0.2s;
+    }
+
+    .admin-dropdown-btn:hover {
+      background: #273548;
     }
 
     .admin-dropdown-menu {
@@ -164,10 +229,10 @@
       width: 100%;
       background: var(--card-bg);
       border: 1px solid var(--border-color);
-      border-radius: 8px;
-      margin-bottom: 6px;
+      border-radius: 10px;
+      margin-bottom: 8px;
       overflow: hidden;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      box-shadow: var(--shadow);
       z-index: 10;
     }
 
@@ -193,28 +258,31 @@
     .user-card {
       background-color: var(--card-bg);
       border: 1px solid var(--border-color);
-      border-radius: 10px;
+      border-radius: 12px;
       padding: 14px;
       display: flex;
       align-items: center;
       gap: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
 
     .avatar {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background-color: var(--accent-blue);
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent-gold), #d97706);
       color: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-weight: 700;
+      font-weight: 800;
+      font-size: 1.1rem;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.4);
     }
 
     .user-info { display: flex; flex-direction: column; }
-    .user-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; }
-    .user-name { font-size: 0.95rem; font-weight: 600; }
+    .user-label { font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
+    .user-name { font-size: 0.95rem; font-weight: 700; color: #fff; }
 
     .btn-logout {
       background: transparent;
@@ -222,77 +290,127 @@
       color: var(--danger);
       font-size: 0.75rem;
       cursor: pointer;
-      margin-top: 2px;
+      margin-top: 3px;
       text-align: left;
+      font-weight: 600;
+      transition: opacity 0.2s;
     }
+    .btn-logout:hover { opacity: 0.8; }
 
+    /* CONTENIDO PRINCIPAL */
     .main-content {
       flex: 1;
-      padding: 40px;
+      padding: 40px 50px;
       overflow-y: auto;
     }
 
     .section { display: none; }
-    .section.active { display: block; }
+    .section.active { display: block; animation: fadeIn 0.3s ease-in-out; }
 
-    h2 { margin-bottom: 20px; font-weight: 700; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    h2 { font-size: 1.8rem; font-weight: 800; margin-bottom: 24px; color: #fff; letter-spacing: -0.5px; }
 
     .card-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 20px;
+      gap: 24px;
     }
 
     .action-card {
       background-color: var(--card-bg);
       border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 24px;
+      border-radius: 16px;
+      padding: 28px;
       cursor: pointer;
-      transition: transform 0.2s, border-color 0.2s;
+      transition: all 0.25s ease;
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .action-card::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; width: 100%; height: 3px;
+      background: var(--accent-gold);
+      opacity: 0;
+      transition: opacity 0.25s;
     }
 
     .action-card:hover {
-      transform: translateY(-3px);
-      border-color: var(--accent-blue);
+      transform: translateY(-4px);
+      border-color: rgba(245, 158, 11, 0.4);
+      background-color: var(--card-hover);
+      box-shadow: 0 15px 30px -10px rgba(0,0,0,0.6);
     }
+
+    .action-card:hover::after { opacity: 1; }
+    .action-card h3 { font-size: 1.2rem; font-weight: 700; margin-bottom: 8px; color: #fff; }
 
     .form-container {
-      max-width: 550px;
+      max-width: 600px;
       background-color: var(--card-bg);
       border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 24px;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: var(--shadow);
     }
 
-    .input-group { margin-bottom: 16px; }
-    .input-group label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; }
+    .form-container h3 { font-size: 1.3rem; margin-bottom: 20px; font-weight: 700; color: #fff; }
+
+    .input-group { margin-bottom: 20px; }
+    .input-group label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px; font-weight: 600; }
+    
     .input-group input, .input-group select, .input-group textarea {
       width: 100%;
-      padding: 10px 14px;
+      padding: 12px 16px;
       background-color: var(--input-bg);
       border: 1px solid var(--border-color);
-      border-radius: 6px;
+      border-radius: 10px;
       color: #fff;
       outline: none;
+      font-size: 0.95rem;
+      transition: all 0.2s;
+    }
+
+    .input-group input:focus, .input-group select:focus, .input-group textarea:focus {
+      border-color: var(--accent-gold);
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15);
+    }
+
+    input[type="file"] {
+      padding: 10px;
+      cursor: pointer;
+      color: var(--text-muted);
     }
 
     .btn {
       width: 100%;
-      padding: 12px;
+      padding: 14px;
       border: none;
-      border-radius: 6px;
-      font-weight: 600;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 1rem;
       cursor: pointer;
+      transition: all 0.2s;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
     }
 
-    .btn-primary { background-color: var(--accent-green); color: #fff; }
-    .btn-blue { background-color: var(--accent-blue); color: #fff; }
-    .btn-danger { background-color: var(--danger); color: #fff; padding: 6px 12px; font-size: 0.8rem; margin-left: 4px; }
-    .btn-success { background-color: var(--accent-green); color: #fff; padding: 6px 12px; font-size: 0.8rem; }
-    .btn-role { background-color: #8b5cf6; color: #fff; padding: 6px 12px; font-size: 0.8rem; margin-left: 4px; }
+    .btn-primary { background: linear-gradient(135deg, var(--accent-green), #059669); color: #fff; }
+    .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
 
-    .status-msg { margin-top: 10px; font-size: 0.85rem; text-align: center; }
+    .btn-blue { background: linear-gradient(135deg, var(--accent-blue), #0284c7); color: #fff; }
+    .btn-blue:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+    .btn-danger { background-color: var(--danger); color: #fff; padding: 6px 12px; font-size: 0.8rem; margin-left: 4px; border-radius: 6px; width: auto; }
+    .btn-success { background-color: var(--accent-green); color: #fff; padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; width: auto; }
+    .btn-role { background-color: #8b5cf6; color: #fff; padding: 6px 12px; font-size: 0.8rem; margin-left: 4px; border-radius: 6px; width: auto; }
+
+    .status-msg { margin-top: 14px; font-size: 0.9rem; text-align: center; font-weight: 600; }
 
     .user-table {
       width: 100%;
@@ -301,10 +419,13 @@
     }
 
     .user-table th, .user-table td {
-      padding: 12px;
+      padding: 14px 12px;
       text-align: left;
       border-bottom: 1px solid var(--border-color);
+      font-size: 0.9rem;
     }
+
+    .user-table th { color: var(--text-muted); font-weight: 700; text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; }
   </style>
 </head>
 <body>
@@ -312,7 +433,7 @@
   <!-- PANTALLA DE AUTENTICACIÓN -->
   <div id="auth-screen">
     <div class="auth-card">
-      <h2 style="text-align:center; margin-bottom:20px;">BRAWLPUSH</h2>
+      <img src="624312d0-7e85-4c6e-b30f-7360e259e0d0.jpg" alt="BrawlPush Logo" class="auth-logo" />
       <div class="auth-tabs">
         <button class="auth-tab active" id="tab-login-btn" onclick="toggleAuthMode('login')">Iniciar Sesión</button>
         <button class="auth-tab" id="tab-register-btn" onclick="toggleAuthMode('register')">Registrarse</button>
@@ -327,7 +448,7 @@
           <label>Contraseña</label>
           <input type="password" id="login-pass" required placeholder="Tu contraseña" />
         </div>
-        <button type="submit" id="btn-entrar" class="btn btn-blue">Entrar</button>
+        <button type="submit" id="btn-entrar" class="btn btn-blue">Entrar al Panel</button>
         <div id="login-msg" class="status-msg"></div>
       </form>
 
@@ -348,10 +469,12 @@
 
   <!-- INTERFAZ PRINCIPAL -->
   <div id="app-container">
-    
     <div class="sidebar">
       <div class="sidebar-top">
-        <div class="brand">BRAWLPUSH</div>
+        <div class="brand-container">
+          <img src="624312d0-7e85-4c6e-b30f-7360e259e0d0.jpg" alt="Logo" class="brand-logo" />
+          <div class="brand-title">BRAWLPUSH</div>
+        </div>
         <div class="menu-group">
           <button class="menu-item active" onclick="switchTab('tab-ordenes', this)">📦 Órdenes</button>
           <button class="menu-item" onclick="switchTab('tab-dudas', this)">❓ Dudas</button>
@@ -359,9 +482,8 @@
         </div>
       </div>
 
-      <!-- ZONA INFERIOR: BOTÓN DE ACCIONES Y PERFIL -->
+      <!-- ZONA INFERIOR SIDEBAR -->
       <div class="sidebar-bottom">
-        <!-- BOTÓN DE ACCIONES DESPLEGABLE SOLO PARA ADMINISTRADORES -->
         <div class="admin-dropdown-container" id="admin-dropdown-wrapper">
           <div class="admin-dropdown-menu" id="admin-menu-dropdown">
             <button class="admin-dropdown-item active" id="opt-staff" onclick="setAdminView('staff')">👤 Vista Staff</button>
@@ -385,23 +507,22 @@
     </div>
 
     <div class="main-content">
-
       <!-- ÓRDENES -->
       <div id="tab-ordenes" class="section active">
         <h2>Gestión de Órdenes</h2>
         <div class="card-grid" style="margin-bottom: 30px;">
           <div class="action-card" onclick="showForm('form-crear-orden')">
             <h3>🛠️ Crear Orden</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 6px;">Enviar solicitud de nuevo trabajo al Bot.</p>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 6px;">Enviar solicitud de nuevo trabajo al Bot de Discord.</p>
           </div>
           <div class="action-card" onclick="showForm('form-finalizar-orden')">
             <h3>✅ Finalizar Trabajo</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 6px;">Registrar cierre de trabajo completado.</p>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 6px;">Registrar cierre de trabajo completado con captura.</p>
           </div>
         </div>
 
         <div id="form-crear-orden" class="form-container" style="display:none;">
-          <h3>Crear Orden</h3>
+          <h3>Crear Orden de Servicio</h3>
           <form onsubmit="handleCrearOrden(event)">
             <div class="input-group">
               <label>Ganancias (€)</label>
@@ -417,9 +538,9 @@
             </div>
             <div class="input-group">
               <label>Detalles de la orden</label>
-              <textarea id="ord-detalles" rows="3" placeholder="Información sobre la orden..."></textarea>
+              <textarea id="ord-detalles" rows="3" placeholder="Información adicional sobre la orden..."></textarea>
             </div>
-            <button type="submit" class="btn btn-primary">Enviar Orden</button>
+            <button type="submit" class="btn btn-primary">Enviar Orden a Discord</button>
             <div id="msg-crear-orden" class="status-msg"></div>
           </form>
         </div>
@@ -428,12 +549,12 @@
           <h3>Finalizar Trabajo</h3>
           <form onsubmit="handleFinalizarTrabajo(event)">
             <div class="input-group">
-              <label>📷 Adjuntar Captura / Foto</label>
+              <label>📷 Adjuntar Captura / Evidencia</label>
               <input type="file" id="fin-foto" accept="image/*" required />
             </div>
             <div class="input-group">
               <label>👤 Solicitante de la Orden</label>
-              <input type="text" id="fin-solicitante" required placeholder="Nombre de quien solicita la orden" />
+              <input type="text" id="fin-solicitante" required placeholder="Nombre de quien solicita" />
             </div>
             <div class="input-group">
               <label>📦 Tipo de Orden</label>
@@ -460,11 +581,11 @@
           <form onsubmit="handleEnviarDuda(event)">
             <div class="input-group">
               <label>Asunto / Título</label>
-              <input type="text" id="duda-titulo" required placeholder="Escribe el tema..." />
+              <input type="text" id="duda-titulo" required placeholder="Escribe el tema de tu consulta..." />
             </div>
             <div class="input-group">
               <label>Descripción detallada</label>
-              <textarea id="duda-mensaje" rows="5" required placeholder="Explica tu duda..."></textarea>
+              <textarea id="duda-mensaje" rows="5" required placeholder="Explica tu duda para el equipo..."></textarea>
             </div>
             <button type="submit" class="btn btn-blue">Enviar Duda al Canal</button>
             <div id="msg-duda" class="status-msg"></div>
@@ -488,24 +609,22 @@
                 <th>Acciones</th>
               </tr>
             </thead>
-            <tbody id="user-list-body">
-            </tbody>
+            <tbody id="user-list-body"></tbody>
           </table>
         </div>
 
         <div class="form-container" style="max-width: 100%; margin-bottom: 30px;">
           <h3>⚙️ Webhook del Canal de Dudas</h3>
-          <input type="text" id="webhook-dudas-input" style="width:100%; padding:8px; background:var(--input-bg); border:1px solid var(--border-color); color:#fff; border-radius:6px; margin-top:8px;" />
-          <button onclick="saveWebhookDudas()" class="btn btn-primary" style="margin-top:10px; width:auto; padding:8px 16px;">Guardar Webhook Dudas</button>
+          <input type="text" id="webhook-dudas-input" style="width:100%; padding:10px; background:var(--input-bg); border:1px solid var(--border-color); color:#fff; border-radius:8px; margin-top:8px;" />
+          <button onclick="saveWebhookDudas()" class="btn btn-primary" style="margin-top:12px; width:auto; padding:10px 20px;">Guardar Webhook</button>
         </div>
 
         <div class="form-container" style="max-width: 100%; margin-bottom: 30px;">
           <h3>⚙️ Webhook de Finalizar Trabajo</h3>
-          <input type="text" id="webhook-finalizar-input" style="width:100%; padding:8px; background:var(--input-bg); border:1px solid var(--border-color); color:#fff; border-radius:6px; margin-top:8px;" />
-          <button onclick="saveWebhookFinalizar()" class="btn btn-primary" style="margin-top:10px; width:auto; padding:8px 16px;">Guardar Webhook Finalizar Trabajo</button>
+          <input type="text" id="webhook-finalizar-input" style="width:100%; padding:10px; background:var(--input-bg); border:1px solid var(--border-color); color:#fff; border-radius:8px; margin-top:8px;" />
+          <button onclick="saveWebhookFinalizar()" class="btn btn-primary" style="margin-top:12px; width:auto; padding:10px 20px;">Guardar Webhook</button>
         </div>
       </div>
-
     </div>
   </div>
 
@@ -595,14 +714,12 @@
 
       const roleLabel = document.getElementById('user-role-label');
       
-      // Si es admin o chispa9181, mostrar opción de administrador y etiqueta Admin
       if (currentUser.username === 'chispa9181' || currentUser.role === 'admin') {
         roleLabel.innerText = "ADMINISTRADOR";
-        roleLabel.style.color = "var(--accent-green)";
+        roleLabel.style.color = "var(--accent-gold)";
         document.getElementById('admin-dropdown-wrapper').style.display = 'block';
         setAdminView('staff');
       } else {
-        // Si es usuario normal / staff
         roleLabel.innerText = "STAFF";
         roleLabel.style.color = "var(--text-muted)";
         document.getElementById('admin-dropdown-wrapper').style.display = 'none';
@@ -682,7 +799,7 @@
             tr.innerHTML = `
               <td>${u}</td>
               <td><code>${data.users[u].pass}</code></td>
-              <td><span style="color:${userRole === 'admin' ? 'var(--accent-green)' : 'var(--text-muted)'}">${userRole === 'admin' ? 'Administrador' : 'Staff'}</span></td>
+              <td><span style="color:${userRole === 'admin' ? 'var(--accent-gold)' : 'var(--text-muted)'}">${userRole === 'admin' ? 'Administrador' : 'Staff'}</span></td>
               <td><span style="color:${data.users[u].status === 'approved' ? 'var(--accent-green)' : 'var(--danger)'}">${data.users[u].status === 'approved' ? 'Aprobado' : 'Pendiente'}</span></td>
               <td>
                 ${data.users[u].status === 'pending' ? `<button onclick="approveUser('${u}')" class="btn btn-success">Aprobar</button>` : ''}
