@@ -412,7 +412,7 @@
       border-color: var(--accent-gold);
     }
 
-    /* ESTILOS DE LA NUEVA BANDEJA DE CHATS (ADMIN) */
+    /* ESTILOS DE LA BANDEJA DE CHATS (ADMIN) */
     .chat-container-wrapper {
       max-width: 800px;
       display: flex;
@@ -474,7 +474,7 @@
       background: var(--input-bg);
       border-top: 1px solid var(--border-color);
       flex-direction: column;
-      height: 450px;
+      height: 480px;
     }
 
     .chat-accordion-body.show {
@@ -752,7 +752,6 @@
       <div id="tab-chat" class="section">
         <h2>💬 Comunicación con Administración</h2>
         
-        <!-- Contenedor general para Admin (lista de chats) o Staff (chat único) -->
         <div id="chats-dynamic-container" class="chat-container-wrapper">
           <p style="color: var(--text-muted);">Cargando canales de comunicación...</p>
         </div>
@@ -801,7 +800,7 @@
     let webhookFinalizar = localStorage.getItem('discord_webhook_finalizar') || DEFAULT_WEBHOOK_FINALIZAR;
     let currentUser = null;
     let allChatsData = {};
-    let lastMessageCounts = {}; // Para detectar mensajes nuevos por usuario y lanzar sonido/aviso
+    let lastMessageCounts = {};
 
     function playNotificationSound() {
       try {
@@ -919,7 +918,6 @@
       loadChatMessages();
     }
 
-    // Cargar mensajes y renderizar acordeones o chat único con sonido de aviso
     async function loadChatMessages() {
       if (!currentUser) return;
       const isAdmin = currentUser.username === 'chispa9181' || currentUser.role === 'admin';
@@ -944,7 +942,6 @@
               return;
             }
 
-            // Comprobar si hay mensajes nuevos de algún usuario para sonar la alerta
             let hasNewActivity = false;
             userKeys.forEach(u => {
               const count = (allChatsData[u] || []).length;
@@ -958,7 +955,6 @@
               playNotificationSound();
             }
 
-            // Mantener abiertos los acordeones que el admin ya tenía abiertos
             const openAccordions = Array.from(document.querySelectorAll('.chat-accordion-body.show'))
                                        .map(el => el.id.replace('body-', ''));
 
@@ -967,7 +963,6 @@
             userKeys.forEach(u => {
               const messages = allChatsData[u] || [];
               const lastMsg = messages[messages.length - 1];
-              // Si el último mensaje fue enviado por el usuario y no por el admin, mostramos la etiqueta de notificación
               const hasUnread = lastMsg && lastMsg.sender !== currentUser.username;
               const isOpen = openAccordions.includes(u);
 
@@ -981,6 +976,9 @@
                   <span style="color: var(--text-muted); font-size: 0.8rem;">${isOpen ? '▲ Cerrar' : '▼ Abrir'}</span>
                 </div>
                 <div class="chat-accordion-body ${isOpen ? 'show' : ''}" id="body-${u}">
+                  <div style="display: flex; justify-content: flex-end; margin-bottom: 10px;">
+                    <button type="button" onclick="deleteChat('${u}')" class="btn btn-danger" style="width: auto; padding: 6px 12px;">🗑️ Borrar comunicación</button>
+                  </div>
                   <div class="chat-messages" id="msgs-${u}">
                     ${messages.length === 0 ? '<p style="color: var(--text-muted); text-align: center; margin: auto;">No hay mensajes todavía.</p>' : 
                       messages.map(m => `
@@ -998,13 +996,11 @@
               `;
               container.appendChild(item);
 
-              // Auto-scroll al fondo del chat si está abierto
               const msgsBox = document.getElementById(`msgs-${u}`);
               if (msgsBox) msgsBox.scrollTop = msgsBox.scrollHeight;
             });
 
           } else {
-            // Vista de Staff (Chat único con el Administrador)
             const messages = data.messages || [];
             const count = messages.length;
             if (lastMessageCounts['staff'] !== undefined && count > lastMessageCounts['staff']) {
@@ -1036,19 +1032,36 @@
       } catch (err) {}
     }
 
-    // Abrir o cerrar acordeón de chat individual (Admin)
     function toggleAccordion(username) {
       const body = document.getElementById(`body-${username}`);
       const isOpen = body.classList.contains('show');
-      
-      // Cerrar todos los demás o mantener abierto (aquí permitimos abrir/cerrar de forma independiente)
       body.classList.toggle('show', !isOpen);
-      
-      // Actualizar texto del header
       loadChatMessages();
     }
 
-    // Enviar mensaje como Admin a un usuario específico
+    // Función para borrar la comunicación con confirmación
+    async function deleteChat(username) {
+      const confirmacion = confirm(`¿Seguro que quieres borrar esta comunicación con "${username}"?`);
+      if (!confirmacion) return;
+
+      try {
+        const res = await fetch('https://bot-ordenes.onrender.com/api/chat/delete', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            password: "eT1vynN5",
+            targetUser: username
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          loadChatMessages();
+        }
+      } catch (err) {
+        alert("Error al borrar la comunicación.");
+      }
+    }
+
     async function sendAdminMessage(e, recipient) {
       e.preventDefault();
       const input = document.getElementById(`input-${recipient}`);
@@ -1074,7 +1087,6 @@
       } catch (err) {}
     }
 
-    // Enviar mensaje como Staff
     async function sendStaffMessage(e) {
       e.preventDefault();
       const input = document.getElementById('chat-input-msg');
