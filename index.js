@@ -12,7 +12,6 @@ const CHANNEL_ID = "1545829356310495253";
 const USERS_FILE = './users.json';
 const CHATS_FILE = './chats.json';
 
-// Función loadUsers corregida para fusionar usuarios por defecto
 function loadUsers() {
   const defaultUsers = {
     "chispa9181": { pass: "eT1vynN5", status: "approved", role: "admin" },
@@ -23,8 +22,6 @@ function loadUsers() {
     if (fs.existsSync(USERS_FILE)) {
       const data = fs.readFileSync(USERS_FILE, 'utf8');
       const parsed = JSON.parse(data);
-      
-      // Fusiona los usuarios por defecto con los que ya estén guardados en el archivo
       const mergedUsers = { ...defaultUsers, ...parsed };
       saveUsersToFile(mergedUsers);
       return mergedUsers;
@@ -60,6 +57,34 @@ const client = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBit
 const expressApp = express();
 expressApp.use(cors());
 expressApp.use(express.json());
+
+// ================= MANEJADOR DE BOTONES DE DISCORD =================
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isButton()) return;
+
+  if (interaction.customId === 'claim_order_btn') {
+    try {
+      const originalEmbed = interaction.message.embeds[0];
+      if (!originalEmbed) return;
+
+      const updatedEmbed = EmbedBuilder.from(originalEmbed)
+        .setColor(65280) // Cambia a verde brillante al reclamar
+        .spliceFields(5, 1, { name: "📌 Estado", value: `🟢 **Reclamado por <@${interaction.user.id}>**` });
+
+      const disabledRow = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId('claim_order_btn_disabled')
+          .setLabel(`✅ Reclamado por ${interaction.user.username}`)
+          .setStyle(ButtonStyle.Success)
+          .setDisabled(true)
+      );
+
+      await interaction.update({ embeds: [updatedEmbed], components: [disabledRow] });
+    } catch (err) {
+      console.error("Error al reclamar la orden:", err);
+    }
+  }
+});
 
 expressApp.post('/api/register', (req, res) => {
   const { username, password } = req.body;
